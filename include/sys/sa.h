@@ -139,6 +139,7 @@ void sa_set_userp(sa_handle_t *, void *);
 dmu_buf_t *sa_get_db(sa_handle_t *);
 uint64_t sa_handle_object(sa_handle_t *);
 boolean_t sa_attr_would_spill(sa_handle_t *, sa_attr_type_t, int size);
+void sa_spill_rele(sa_handle_t *);
 void sa_register_update_callback(objset_t *, sa_update_cb_t *);
 int sa_setup(objset_t *, uint64_t, sa_attr_reg_t *, int, sa_attr_type_t **);
 void sa_tear_down(objset_t *);
@@ -149,6 +150,8 @@ int sa_replace_all_by_template_locked(sa_handle_t *, sa_bulk_attr_t *,
 boolean_t sa_enabled(objset_t *);
 void sa_cache_init(void);
 void sa_cache_fini(void);
+void *sa_spill_alloc(int);
+void sa_spill_free(void *);
 int sa_set_sa_object(objset_t *, uint64_t);
 int sa_hdrsize(void *);
 void sa_handle_lock(sa_handle_t *);

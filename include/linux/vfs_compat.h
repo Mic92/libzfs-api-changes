@@ -62,23 +62,51 @@ truncate_setsize(struct inode *ip, loff_t new)
 }
 #endif /* HAVE_TRUNCATE_SETSIZE */
 
+#if defined(HAVE_BDI) && !defined(HAVE_BDI_SETUP_AND_REGISTER)
 /*
- * 2.6.32 API change,
- * Added backing_device_info (bdi) per super block interfaces.  When
- * available a bdi must be configured when using a non-device backed
- * filesystem for proper writeback.  It's safe to leave this code
- * dormant for kernels which only support pdflush and not bdi.
+ * 2.6.34 API change,
+ * Add bdi_setup_and_register() function if not yet provided by kernel.
+ * It is used to quickly initialize and register a BDI for the filesystem.
  */
-#ifdef HAVE_BDI
-#define	bdi_get_sb(sb)				(sb->s_bdi)
-#define	bdi_put_sb(sb, bdi)			(sb->s_bdi = bdi)
-#else
-#define	bdi_init(bdi)				(0)
-#define	bdi_destroy(bdi)			(0)
-#define	bdi_register(bdi, parent, fmt, args)	(0)
-#define	bdi_unregister(bdi)			(0)
-#define	bdi_get_sb(sb)				(0)
-#define	bdi_put_sb(sb, bdi)			(0)
-#endif /* HAVE_BDI */
+extern atomic_long_t zfs_bdi_seq;
+
+static inline int
+bdi_setup_and_register(struct backing_dev_info *bdi,char *name,unsigned int cap)
+{
+	char tmp[32];
+	int error;
+
+	bdi->name = name;
+	bdi->capabilities = cap;
+	error = bdi_init(bdi);
+	if (error)
+		return (error);
+
+	sprintf(tmp, "%.28s%s", name, "-%d");
+	error = bdi_register(bdi, NULL, tmp,
+	    atomic_long_inc_return(&zfs_bdi_seq));
+	if (error) {
+		bdi_destroy(bdi);
+		return (error);
+	}
+
+	return (error);
+}
+#endif /* HAVE_BDI && !HAVE_BDI_SETUP_AND_REGISTER */
+
+/*
+ * 3.2-rc1 API change,
+ * Add set_nlink() if it is not exported by the Linux kernel.
+ *
+ * i_nlink is read-only in Linux 3.2, but it can be set directly in
+ * earlier kernels.
+ */
+#ifndef HAVE_SET_NLINK
+static inline void
+set_nlink(struct inode *inode, unsigned int nlink)
+{
+	inode->i_nlink = nlink;
+}
+#endif /* HAVE_SET_NLINK */
 
 #endif /* _ZFS_VFS_H */
