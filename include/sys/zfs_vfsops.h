@@ -42,8 +42,8 @@ struct zfs_sb;
 struct znode;
 
 typedef struct zfs_sb {
-	struct vfsmount	*z_vfs;		/* generic vfs struct */
 	struct super_block *z_sb;	/* generic super_block */
+	struct backing_dev_info z_bdi;	/* generic backing dev info */
 	struct zfs_sb	*z_parent;	/* parent fs */
 	objset_t	*z_os;		/* objset reference */
 	uint64_t	z_flags;	/* super_block flags */
@@ -67,15 +67,19 @@ typedef struct zfs_sb {
 	boolean_t	z_unmounted;	/* unmounted */
 	rrwlock_t	z_teardown_lock;
 	krwlock_t	z_teardown_inactive_lock;
-	list_t		z_all_znodes;	/* all vnodes in the fs */
+	list_t		z_all_znodes;	/* all znodes in the fs */
+	uint64_t	z_nr_znodes;	/* number of znodes in the fs */
 	kmutex_t	z_znodes_lock;	/* lock for z_all_znodes */
 	struct inode	*z_ctldir;	/* .zfs directory inode */
+	avl_tree_t	z_ctldir_snaps;	/* .zfs/snapshot entries */
+	kmutex_t	z_ctldir_lock;	/* .zfs ctldir lock */
 	boolean_t	z_show_ctldir;	/* expose .zfs in the root dir */
 	boolean_t	z_issnap;	/* true if this is a snapshot */
 	boolean_t	z_vscan;	/* virus scan on/off */
 	boolean_t	z_use_fuids;	/* version allows fuids */
 	boolean_t	z_replay;	/* set during ZIL replay */
 	boolean_t	z_use_sa;	/* version allow system attributes */
+	boolean_t	z_xattr_sa;	/* allow xattrs to be stores as SA */
 	uint64_t	z_version;	/* ZPL version */
 	uint64_t	z_shares_dir;	/* hidden shares dir */
 	kmutex_t	z_lock;
@@ -89,32 +93,14 @@ typedef struct zfs_sb {
 
 #define	ZFS_SUPER_MAGIC	0x2fc12fc1
 
-#define	ZSB_XATTR_USER	0x0001		/* Enable user xattrs */
-
-
-/*
- * Minimal snapshot helpers, the bulk of the Linux snapshot implementation
- * lives in the zpl_snap.c file which is part of the zpl source.
- */
-#define	ZFS_CTLDIR_NAME		".zfs"
-
-#define	zfs_has_ctldir(zdp)	\
-	((zdp)->z_id == ZTOZSB(zdp)->z_root && \
-	(ZTOZSB(zdp)->z_ctldir != NULL))
-#define	zfs_show_ctldir(zdp)	\
-	(zfs_has_ctldir(zdp) &&	\
-	(ZTOZSB(zdp)->z_show_ctldir))
-
-#define	ZFSCTL_INO_ROOT		0x1
-#define	ZFSCTL_INO_SNAPDIR	0x2
-#define	ZFSCTL_INO_SHARES	0x3
+#define	ZSB_XATTR	0x0001		/* Enable user xattrs */
 
 /*
  * Allow a maximum number of links.  While ZFS does not internally limit
- * this most Linux filesystems do.  It's probably a good idea to limit
- * this to a large value until it is validated that this is safe.
+ * this the inode->i_nlink member is defined as an unsigned int.  To be
+ * safe we use 2^31-1 as the limit.
  */
-#define ZFS_LINK_MAX		65536
+#define ZFS_LINK_MAX		((1U << 31) - 1U)
 
 /*
  * Normal filesystems (those not under .zfs/snapshot) have a total
@@ -179,17 +165,26 @@ extern boolean_t zfs_owner_overquota(zfs_sb_t *zsb, struct znode *,
 extern boolean_t zfs_fuid_overquota(zfs_sb_t *zsb, boolean_t isgroup,
     uint64_t fuid);
 extern int zfs_set_version(zfs_sb_t *zsb, uint64_t newvers);
+extern int zfs_get_zplprop(objset_t *os, zfs_prop_t prop,
+    uint64_t *value);
 extern int zfs_sb_create(const char *name, zfs_sb_t **zsbp);
+extern int zfs_sb_setup(zfs_sb_t *zsb, boolean_t mounting);
 extern void zfs_sb_free(zfs_sb_t *zsb);
+extern int zfs_sb_prune(struct super_block *sb, unsigned long nr_to_scan,
+    int *objects);
+extern int zfs_sb_teardown(zfs_sb_t *zsb, boolean_t unmounting);
 extern int zfs_check_global_label(const char *dsname, const char *hexsl);
+extern boolean_t zfs_is_readonly(zfs_sb_t *zsb);
 
 extern int zfs_register_callbacks(zfs_sb_t *zsb);
 extern void zfs_unregister_callbacks(zfs_sb_t *zsb);
 extern int zfs_domount(struct super_block *sb, void *data, int silent);
+extern void zfs_preumount(struct super_block *sb);
 extern int zfs_umount(struct super_block *sb);
+extern int zfs_remount(struct super_block *sb, int *flags, char *data);
 extern int zfs_root(zfs_sb_t *zsb, struct inode **ipp);
 extern int zfs_statvfs(struct dentry *dentry, struct kstatfs *statp);
-extern int zfs_vget(struct vfsmount *vfsp, struct inode **ipp, fid_t *fidp);
+extern int zfs_vget(struct super_block *sb, struct inode **ipp, fid_t *fidp);
 
 #ifdef	__cplusplus
 }

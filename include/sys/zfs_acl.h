@@ -28,6 +28,7 @@
 #ifdef _KERNEL
 #include <sys/isa_defs.h>
 #include <sys/types32.h>
+#include <sys/xvattr.h>
 #endif
 #include <sys/acl.h>
 #include <sys/dmu.h>
@@ -164,7 +165,7 @@ typedef struct zfs_acl {
 	uint64_t	z_hints;	/* ACL hints (ZFS_INHERIT_ACE ...) */
 	zfs_acl_node_t	*z_curr_node;	/* current node iterator is handling */
 	list_t		z_acl;		/* chunks of ACE data */
-	acl_ops_t	z_ops;		/* ACL operations */
+	acl_ops_t	*z_ops;		/* ACL operations */
 } zfs_acl_t;
 
 typedef struct acl_locator_cb {

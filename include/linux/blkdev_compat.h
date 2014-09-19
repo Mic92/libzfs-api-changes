@@ -18,17 +18,16 @@
  *
  * CDDL HEADER END
  */
+
 /*
- * Copyright (C) 2008-2010 Lawrence Livermore National Security, LLC.
+ * Copyright (C) 2011 Lawrence Livermore National Security, LLC.
  * Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  * Written by Brian Behlendorf <behlendorf1@llnl.gov>.
  * LLNL-CODE-403049.
  */
 
-#ifndef	_SYS_BLKDEV_H
-#define	_SYS_BLKDEV_H
-
-#ifdef _KERNEL
+#ifndef _ZFS_BLKDEV_H
+#define _ZFS_BLKDEV_H
 
 #include <linux/blkdev.h>
 #include <linux/elevator.h>
@@ -133,6 +132,23 @@ blk_end_request_x(struct request *req, int error, unsigned int nr_bytes)
 # endif /* HAVE_BLK_END_REQUEST_GPL_ONLY */
 #endif /* HAVE_BLK_END_REQUEST */
 
+/*
+ * 2.6.36 API change,
+ * The blk_queue_flush() interface has replaced blk_queue_ordered()
+ * interface.  However, while the old interface was available to all the
+ * new one is GPL-only.   Thus if the GPL-only version is detected we
+ * implement our own trivial helper compatibility funcion.   The hope is
+ * that long term this function will be opened up.
+ */
+#if defined(HAVE_BLK_QUEUE_FLUSH) && defined(HAVE_BLK_QUEUE_FLUSH_GPL_ONLY)
+#define blk_queue_flush __blk_queue_flush
+static inline void
+__blk_queue_flush(struct request_queue *q, unsigned int flags)
+{
+	q->flush_flags = flags & (REQ_FLUSH | REQ_FUA);
+}
+#endif /* HAVE_BLK_QUEUE_FLUSH && HAVE_BLK_QUEUE_FLUSH_GPL_ONLY */
+
 #ifndef HAVE_BLK_RQ_POS
 static inline sector_t
 blk_rq_pos(struct request *req)
@@ -171,6 +187,64 @@ __blk_rq_bytes(struct request *req)
  */
 #ifndef blk_fs_request
 #define blk_fs_request(rq)	((rq)->cmd_type == REQ_TYPE_FS)
+#endif
+
+/*
+ * 2.6.27 API change,
+ * The blk_queue_stackable() queue flag was added in 2.6.27 to handle dm
+ * stacking drivers.  Prior to this request stacking drivers were detected
+ * by checking (q->request_fn == NULL), for earlier kernels we revert to
+ * this legacy behavior.
+ */
+#ifndef blk_queue_stackable
+#define blk_queue_stackable(q)	((q)->request_fn == NULL)
+#endif
+
+/*
+ * 2.6.34 API change,
+ * The blk_queue_max_hw_sectors() function replaces blk_queue_max_sectors().
+ */
+#ifndef HAVE_BLK_QUEUE_MAX_HW_SECTORS
+#define blk_queue_max_hw_sectors __blk_queue_max_hw_sectors
+static inline void
+__blk_queue_max_hw_sectors(struct request_queue *q, unsigned int max_hw_sectors)
+{
+	blk_queue_max_sectors(q, max_hw_sectors);
+}
+#endif
+
+/*
+ * 2.6.34 API change,
+ * The blk_queue_max_segments() function consolidates
+ * blk_queue_max_hw_segments() and blk_queue_max_phys_segments().
+ */
+#ifndef HAVE_BLK_QUEUE_MAX_SEGMENTS
+#define blk_queue_max_segments __blk_queue_max_segments
+static inline void
+__blk_queue_max_segments(struct request_queue *q, unsigned short max_segments)
+{
+	blk_queue_max_phys_segments(q, max_segments);
+	blk_queue_max_hw_segments(q, max_segments);
+}
+#endif
+
+/*
+ * 2.6.30 API change,
+ * The blk_queue_physical_block_size() function was introduced to
+ * indicate the smallest I/O the device can write without incurring
+ * a read-modify-write penalty.  For older kernels this is a no-op.
+ */
+#ifndef HAVE_BLK_QUEUE_PHYSICAL_BLOCK_SIZE
+#define blk_queue_physical_block_size(q, x)	((void)(0))
+#endif
+
+/*
+ * 2.6.30 API change,
+ * The blk_queue_io_opt() function was added to indicate the optimal
+ * I/O size for the device.  For older kernels this is a no-op.
+ */
+#ifndef HAVE_BLK_QUEUE_IO_OPT
+#define blk_queue_io_opt(q, x)			((void)(0))
 #endif
 
 #ifndef HAVE_GET_DISK_RO
@@ -212,6 +286,10 @@ struct req_iterator {
 		bio_for_each_segment(bvl, _iter.bio, _iter.i)
 #endif /* HAVE_RQ_FOR_EACH_SEGMENT */
 
+/*
+ * Portable helper for correctly setting the FAILFAST flags.  The
+ * correct usage has changed 3 times from 2.6.12 to 2.6.38.
+ */
 static inline void
 bio_set_flags_failfast(struct block_device *bdev, int *flags)
 {
@@ -255,10 +333,126 @@ bio_set_flags_failfast(struct block_device *bdev, int *flags)
 #endif /* HAVE_BIO_RW_FAILFAST_DTD */
 }
 
+/*
+ * Maximum disk label length, it may be undefined for some kernels.
+ */
 #ifndef DISK_NAME_LEN
 #define DISK_NAME_LEN	32
 #endif /* DISK_NAME_LEN */
 
-#endif /* KERNEL */
+/*
+ * 2.6.24 API change,
+ * The bio_end_io() prototype changed slightly.  These are helper
+ * macro's to ensure the prototype and return value are handled.
+ */
+#ifdef HAVE_2ARGS_BIO_END_IO_T
+# define BIO_END_IO_PROTO(fn, x, y, z)	static void fn(struct bio *x, int z)
+# define BIO_END_IO_RETURN(rc)		return
+#else
+# define BIO_END_IO_PROTO(fn, x, y, z)	static int fn(struct bio *x, \
+					              unsigned int y, int z)
+# define BIO_END_IO_RETURN(rc)		return rc
+#endif /* HAVE_2ARGS_BIO_END_IO_T */
 
-#endif	/* _SYS_BLKDEV_H */
+/*
+ * 2.6.38 - 2.6.x API,
+ *   blkdev_get_by_path()
+ *   blkdev_put()
+ *
+ * 2.6.28 - 2.6.37 API,
+ *   open_bdev_exclusive()
+ *   close_bdev_exclusive()
+ *
+ * 2.6.12 - 2.6.27 API,
+ *   open_bdev_excl()
+ *   close_bdev_excl()
+ *
+ * Used to exclusively open a block device from within the kernel.
+ */
+#if defined(HAVE_BLKDEV_GET_BY_PATH)
+# define vdev_bdev_open(path, md, hld)	blkdev_get_by_path(path, \
+					    (md) | FMODE_EXCL, hld)
+# define vdev_bdev_close(bdev, md)	blkdev_put(bdev, (md) | FMODE_EXCL)
+#elif defined(HAVE_OPEN_BDEV_EXCLUSIVE)
+# define vdev_bdev_open(path, md, hld)	open_bdev_exclusive(path, md, hld)
+# define vdev_bdev_close(bdev, md)	close_bdev_exclusive(bdev, md)
+#else
+# define vdev_bdev_open(path, md, hld)	open_bdev_excl(path, md, hld)
+# define vdev_bdev_close(bdev, md)	close_bdev_excl(bdev)
+#endif /* HAVE_BLKDEV_GET_BY_PATH | HAVE_OPEN_BDEV_EXCLUSIVE */
+
+/*
+ * 2.6.22 API change
+ * The function invalidate_bdev() lost it's second argument because
+ * it was unused.
+ */
+#ifdef HAVE_1ARG_INVALIDATE_BDEV
+# define vdev_bdev_invalidate(bdev)	invalidate_bdev(bdev)
+#else
+# define vdev_bdev_invalidate(bdev)	invalidate_bdev(bdev, 1)
+#endif /* HAVE_1ARG_INVALIDATE_BDEV */
+
+/*
+ * 2.6.30 API change
+ * Change to make it explicit there this is the logical block size.
+ */
+#ifdef HAVE_BDEV_LOGICAL_BLOCK_SIZE
+# define vdev_bdev_block_size(bdev)	bdev_logical_block_size(bdev)
+#else
+# define vdev_bdev_block_size(bdev)	bdev_hardsect_size(bdev)
+#endif
+
+/*
+ * 2.6.37 API change
+ * The WRITE_FLUSH, WRITE_FUA, and WRITE_FLUSH_FUA flags have been
+ * introduced as a replacement for WRITE_BARRIER.  This was done to
+ * allow richer semantics to be expressed to the block layer.  It is
+ * the block layers responsibility to choose the correct way to
+ * implement these semantics.
+ *
+ * The existence of these flags implies that REQ_FLUSH an REQ_FUA are
+ * defined.  Thus we can safely define VDEV_REQ_FLUSH and VDEV_REQ_FUA
+ * compatibility macros.
+ */
+#ifdef WRITE_FLUSH_FUA
+# define VDEV_WRITE_FLUSH_FUA		WRITE_FLUSH_FUA
+# define VDEV_REQ_FLUSH			REQ_FLUSH
+# define VDEV_REQ_FUA			REQ_FUA
+#else
+# define VDEV_WRITE_FLUSH_FUA		WRITE_BARRIER
+# define VDEV_REQ_FLUSH			REQ_HARDBARRIER
+# define VDEV_REQ_FUA			REQ_HARDBARRIER
+#endif
+
+/*
+ * 2.6.32 API change
+ * Use the normal I/O patch for discards.
+ */
+#ifdef REQ_DISCARD
+# define VDEV_REQ_DISCARD		REQ_DISCARD
+#endif
+
+/*
+ * 2.6.33 API change
+ * Discard granularity and alignment restrictions may now be set.  For
+ * older kernels which do not support this it is safe to skip it.
+ */
+#ifdef HAVE_DISCARD_GRANULARITY
+static inline void
+blk_queue_discard_granularity(struct request_queue *q, unsigned int dg)
+{
+	q->limits.discard_granularity = dg;
+}
+#else
+#define blk_queue_discard_granularity(x, dg)	((void)0)
+#endif /* HAVE_DISCARD_GRANULARITY */
+
+/*
+ * Default Linux IO Scheduler,
+ * Setting the scheduler to noop will allow the Linux IO scheduler to
+ * still perform front and back merging, while leaving the request
+ * ordering and prioritization to the ZFS IO scheduler.
+ */
+#define	VDEV_SCHEDULER			"noop"
+
+#endif /* _ZFS_BLKDEV_H */
