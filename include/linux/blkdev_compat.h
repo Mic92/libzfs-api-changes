@@ -393,14 +393,37 @@ bio_set_flags_failfast(struct block_device *bdev, int *flags)
 #endif /* HAVE_1ARG_INVALIDATE_BDEV */
 
 /*
- * 2.6.30 API change
- * Change to make it explicit there this is the logical block size.
+ * 2.6.27 API change
+ * The function was exported for use, prior to this it existed by the
+ * symbol was not exported.
  */
-#ifdef HAVE_BDEV_LOGICAL_BLOCK_SIZE
-# define vdev_bdev_block_size(bdev)	bdev_logical_block_size(bdev)
-#else
-# define vdev_bdev_block_size(bdev)	bdev_hardsect_size(bdev)
+#ifndef HAVE_LOOKUP_BDEV
+# define lookup_bdev(path)		ERR_PTR(-ENOTSUP)
 #endif
+
+/*
+ * 2.6.30 API change
+ * To ensure good performance preferentially use the physical block size
+ * for proper alignment.  The physical size is supposed to be the internal
+ * sector size used by the device.  This is often 4096 byte for AF devices,
+ * while a smaller 512 byte logical size is supported for compatibility.
+ *
+ * Unfortunately, many drives still misreport their physical sector size.
+ * For devices which are known to lie you may need to manually set this
+ * at pool creation time with 'zpool create -o ashift=12 ...'.
+ *
+ * When the physical block size interface isn't available, we fall back to
+ * the logical block size interface and then the older hard sector size.
+ */
+#ifdef HAVE_BDEV_PHYSICAL_BLOCK_SIZE
+# define vdev_bdev_block_size(bdev)	bdev_physical_block_size(bdev)
+#else
+# ifdef HAVE_BDEV_LOGICAL_BLOCK_SIZE
+#  define vdev_bdev_block_size(bdev)	bdev_logical_block_size(bdev)
+# else
+#  define vdev_bdev_block_size(bdev)	bdev_hardsect_size(bdev)
+# endif /* HAVE_BDEV_LOGICAL_BLOCK_SIZE */
+#endif /* HAVE_BDEV_PHYSICAL_BLOCK_SIZE */
 
 /*
  * 2.6.37 API change
@@ -433,11 +456,35 @@ bio_set_flags_failfast(struct block_device *bdev, int *flags)
 #endif
 
 /*
+ * 2.6.33 API change
+ * Discard granularity and alignment restrictions may now be set.  For
+ * older kernels which do not support this it is safe to skip it.
+ */
+#ifdef HAVE_DISCARD_GRANULARITY
+static inline void
+blk_queue_discard_granularity(struct request_queue *q, unsigned int dg)
+{
+	q->limits.discard_granularity = dg;
+}
+#else
+#define blk_queue_discard_granularity(x, dg)	((void)0)
+#endif /* HAVE_DISCARD_GRANULARITY */
+
+/*
  * Default Linux IO Scheduler,
  * Setting the scheduler to noop will allow the Linux IO scheduler to
  * still perform front and back merging, while leaving the request
  * ordering and prioritization to the ZFS IO scheduler.
  */
 #define	VDEV_SCHEDULER			"noop"
+
+/*
+ * A common holder for vdev_bdev_open() is used to relax the exclusive open
+ * semantics slightly.  Internal vdev disk callers may pass VDEV_HOLDER to
+ * allow them to open the device multiple times.  Other kernel callers and
+ * user space processes which don't pass this value will get EBUSY.  This is
+ * currently required for the correct operation of hot spares.
+ */
+#define VDEV_HOLDER			((void *)0x2f5401de7)
 
 #endif /* _ZFS_BLKDEV_H */
