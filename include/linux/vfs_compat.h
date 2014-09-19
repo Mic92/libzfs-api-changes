@@ -27,126 +27,16 @@
 #define _ZFS_VFS_H
 
 /*
- * 2.6.28 API change,
- * Added insert_inode_locked() helper function, prior to this most callers
- * used insert_inode_hash().  The older method doesn't check for collisions
- * in the inode_hashtable but it still acceptible for use.
- */
-#ifndef HAVE_INSERT_INODE_LOCKED
-static inline int
-insert_inode_locked(struct inode *ip)
-{
-	insert_inode_hash(ip);
-	return (0);
-}
-#endif /* HAVE_INSERT_INODE_LOCKED */
-
-/*
  * 2.6.35 API change,
- * Add truncate_setsize() if it is not exported by the Linux kernel.
- *
- * Truncate the inode and pages associated with the inode. The pages are
- * unmapped and removed from cache.
+ * The dentry argument to the .fsync() vfs hook was deemed unused by
+ * all filesystem consumers and dropped.  Add a compatibility prototype
+ * to ensure correct usage when defining this callback.
  */
-#ifndef HAVE_TRUNCATE_SETSIZE
-static inline void
-truncate_setsize(struct inode *ip, loff_t new)
-{
-	struct address_space *mapping = ip->i_mapping;
-
-	i_size_write(ip, new);
-
-	unmap_mapping_range(mapping, new + PAGE_SIZE - 1, 0, 1);
-	truncate_inode_pages(mapping, new);
-	unmap_mapping_range(mapping, new + PAGE_SIZE - 1, 0, 1);
-}
-#endif /* HAVE_TRUNCATE_SETSIZE */
-
-#if defined(HAVE_BDI) && !defined(HAVE_BDI_SETUP_AND_REGISTER)
-/*
- * 2.6.34 API change,
- * Add bdi_setup_and_register() function if not yet provided by kernel.
- * It is used to quickly initialize and register a BDI for the filesystem.
- */
-extern atomic_long_t zfs_bdi_seq;
-
-static inline int
-bdi_setup_and_register(struct backing_dev_info *bdi,char *name,unsigned int cap)
-{
-	char tmp[32];
-	int error;
-
-	bdi->name = name;
-	bdi->capabilities = cap;
-	error = bdi_init(bdi);
-	if (error)
-		return (error);
-
-	sprintf(tmp, "%.28s%s", name, "-%d");
-	error = bdi_register(bdi, NULL, tmp,
-	    atomic_long_inc_return(&zfs_bdi_seq));
-	if (error) {
-		bdi_destroy(bdi);
-		return (error);
-	}
-
-	return (error);
-}
-#endif /* HAVE_BDI && !HAVE_BDI_SETUP_AND_REGISTER */
-
-/*
- * 2.6.38 API change,
- * LOOKUP_RCU flag introduced to distinguish rcu-walk from ref-walk cases.
- */
-#ifndef LOOKUP_RCU
-#define LOOKUP_RCU      0x0
-#endif /* LOOKUP_RCU */
-
-/*
- * 3.2-rc1 API change,
- * Add set_nlink() if it is not exported by the Linux kernel.
- *
- * i_nlink is read-only in Linux 3.2, but it can be set directly in
- * earlier kernels.
- */
-#ifndef HAVE_SET_NLINK
-static inline void
-set_nlink(struct inode *inode, unsigned int nlink)
-{
-	inode->i_nlink = nlink;
-}
-#endif /* HAVE_SET_NLINK */
-
-/*
- * 3.3 API change,
- * The VFS .create, .mkdir and .mknod callbacks were updated to take a
- * umode_t type rather than an int.  To cleanly handle both definitions
- * the zpl_umode_t type is introduced and set accordingly.
- */
-#ifdef HAVE_MKDIR_UMODE_T
-typedef	umode_t		zpl_umode_t;
+#ifdef HAVE_2ARGS_FSYNC
+#define ZPL_FSYNC_PROTO(fn, x, y, z)	static int fn(struct file *x, int z)
 #else
-typedef	int		zpl_umode_t;
+#define ZPL_FSYNC_PROTO(fn, x, y, z)	static int fn(struct file *x, \
+						      struct dentry *y, int z)
 #endif
-
-/*
- * 3.5 API change,
- * The clear_inode() function replaces end_writeback() and introduces an
- * ordering change regarding when the inode_sync_wait() occurs.  See the
- * configure check in config/kernel-clear-inode.m4 for full details.
- */
-#if defined(HAVE_EVICT_INODE) && !defined(HAVE_CLEAR_INODE)
-#define clear_inode(ip)		end_writeback(ip)
-#endif /* HAVE_EVICT_INODE && !HAVE_CLEAR_INODE */
-
-/*
- * 3.6 API change,
- * The sget() helper function now takes the mount flags as an argument.
- */
-#ifdef HAVE_5ARG_SGET
-#define zpl_sget(type, cmp, set, fl, mtd)	sget(type, cmp, set, fl, mtd)
-#else
-#define zpl_sget(type, cmp, set, fl, mtd)	sget(type, cmp, set, mtd)
-#endif /* HAVE_5ARG_SGET */
 
 #endif /* _ZFS_VFS_H */

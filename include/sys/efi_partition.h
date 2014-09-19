@@ -35,7 +35,6 @@ extern "C" {
  * GUID Partition Table Header
  */
 
-#define	EFI_MIN_LABEL_SIZE 92
 #define	EFI_LABEL_SIZE	512
 #define	LEN_EFI_PAD	(EFI_LABEL_SIZE - \
 			    ((5 * sizeof (diskaddr_t)) + \
@@ -229,7 +228,6 @@ struct partition64 {
 extern	int	efi_alloc_and_init(int, uint32_t, struct dk_gpt **);
 extern	int	efi_alloc_and_read(int, struct dk_gpt **);
 extern	int	efi_write(int, struct dk_gpt *);
-extern	int	efi_rescan(int);
 extern	void	efi_free(struct dk_gpt *);
 extern	int	efi_type(int);
 extern	void	efi_err_check(struct dk_gpt *);

@@ -20,7 +20,6 @@
  */
 /*
  * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012 by Delphix. All rights reserved.
  */
 
 /* Portions Copyright 2010 Robert Milkowski */
@@ -373,65 +372,6 @@ typedef struct itx {
 	/* followed by type-specific part of lr_xx_t and its immediate data */
 } itx_t;
 
-/*
- * Used for zil kstat.
- */
-typedef struct zil_stats {
-	/*
-	 * Number of times a ZIL commit (e.g. fsync) has been requested.
-	 */
-	kstat_named_t zil_commit_count;
-
-	/*
-	 * Number of times the ZIL has been flushed to stable storage.
-	 * This is less than zil_commit_count when commits are "merged"
-	 * (see the documentation above zil_commit()).
-	 */
-	kstat_named_t zil_commit_writer_count;
-
-	/*
-	 * Number of transactions (reads, writes, renames, etc.)
-	 * that have been commited.
-	 */
-	kstat_named_t zil_itx_count;
-
-	/*
-	 * See the documentation for itx_wr_state_t above.
-	 * Note that "bytes" accumulates the length of the transactions
-	 * (i.e. data), not the actual log record sizes.
-	 */
-	kstat_named_t zil_itx_indirect_count;
-	kstat_named_t zil_itx_indirect_bytes;
-	kstat_named_t zil_itx_copied_count;
-	kstat_named_t zil_itx_copied_bytes;
-	kstat_named_t zil_itx_needcopy_count;
-	kstat_named_t zil_itx_needcopy_bytes;
-
-	/*
-	 * Transactions which have been allocated to the "normal"
-	 * (i.e. not slog) storage pool. Note that "bytes" accumulate
-	 * the actual log record sizes - which do not include the actual
-	 * data in case of indirect writes.
-	 */
-	kstat_named_t zil_itx_metaslab_normal_count;
-	kstat_named_t zil_itx_metaslab_normal_bytes;
-
-	/*
-	 * Transactions which have been allocated to the "slog" storage pool.
-	 * If there are no separate log devices, this is the same as the
-	 * "normal" pool.
-	 */
-	kstat_named_t zil_itx_metaslab_slog_count;
-	kstat_named_t zil_itx_metaslab_slog_bytes;
-} zil_stats_t;
-
-extern zil_stats_t zil_stats;
-
-#define ZIL_STAT_INCR(stat, val) \
-    atomic_add_64(&zil_stats.stat.value.ui64, (val));
-#define ZIL_STAT_BUMP(stat) \
-    ZIL_STAT_INCR(stat, 1);
-
 typedef int zil_parse_blk_func_t(zilog_t *zilog, blkptr_t *bp, void *arg,
     uint64_t txg);
 typedef int zil_parse_lr_func_t(zilog_t *zilog, lr_t *lr, void *arg,
@@ -455,7 +395,6 @@ extern void	zil_replay(objset_t *os, void *arg,
     zil_replay_func_t *replay_func[TX_MAX_TYPE]);
 extern boolean_t zil_replaying(zilog_t *zilog, dmu_tx_t *tx);
 extern void	zil_destroy(zilog_t *zilog, boolean_t keep_first);
-extern void	zil_destroy_sync(zilog_t *zilog, dmu_tx_t *tx);
 extern void	zil_rollback_destroy(zilog_t *zilog, dmu_tx_t *tx);
 
 extern itx_t	*zil_itx_create(uint64_t txtype, size_t lrsize);

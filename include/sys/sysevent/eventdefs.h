@@ -21,7 +21,6 @@
 /*
  * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
- * Copyright 2011 Nexenta Systems, Inc.  All rights reserved.
  */
 
 #ifndef	_SYS_SYSEVENT_EVENTDEFS_H

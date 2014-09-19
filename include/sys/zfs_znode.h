@@ -105,7 +105,6 @@ extern "C" {
 #define	SA_ZPL_FLAGS(z)		z->z_attr_table[ZPL_FLAGS]
 #define	SA_ZPL_SIZE(z)		z->z_attr_table[ZPL_SIZE]
 #define	SA_ZPL_ZNODE_ACL(z)	z->z_attr_table[ZPL_ZNODE_ACL]
-#define	SA_ZPL_DXATTR(z)	z->z_attr_table[ZPL_DXATTR]
 #define	SA_ZPL_PAD(z)		z->z_attr_table[ZPL_PAD]
 
 /*
@@ -207,16 +206,11 @@ typedef struct znode {
 	uint32_t	z_sync_cnt;	/* synchronous open count */
 	kmutex_t	z_acl_lock;	/* acl data lock */
 	zfs_acl_t	*z_acl_cached;	/* cached acl */
-	krwlock_t	z_xattr_lock;	/* xattr data lock */
-	nvlist_t	*z_xattr_cached;/* cached xattrs */
-	struct znode	*z_xattr_parent;/* xattr parent znode */
 	list_node_t	z_link_node;	/* all znodes in fs link */
 	sa_handle_t	*z_sa_hdl;	/* handle to sa data */
 	boolean_t	z_is_sa;	/* are we native sa? */
 	boolean_t	z_is_zvol;	/* are we used by the zvol */
 	boolean_t	z_is_mapped;	/* are we mmap'ed */
-	boolean_t	z_is_ctldir;	/* are we .zfs entry */
-	boolean_t	z_is_stale;	/* are we stale due to rollback? */
 	struct inode	z_inode;	/* generic vfs inode */
 } znode_t;
 
@@ -242,8 +236,9 @@ typedef struct znode {
  */
 #define	ZTOI(znode)	(&((znode)->z_inode))
 #define	ITOZ(inode)	(container_of((inode), znode_t, z_inode))
-#define	ZTOZSB(znode)	((zfs_sb_t *)(ZTOI(znode)->i_sb->s_fs_info))
-#define	ITOZSB(inode)	((zfs_sb_t *)((inode)->i_sb->s_fs_info))
+#define VTOZSB(vfs)	((zfs_sb_t *)((vfs)->mnt_sb->s_fs_info))
+#define ZTOZSB(znode)	((zfs_sb_t *)(ZTOI(znode)->i_sb->s_fs_info))
+#define ITOZSB(inode)	((zfs_sb_t *)((inode)->i_sb->s_fs_info))
 
 #define	S_ISDEV(mode)	(S_ISCHR(mode) || S_ISBLK(mode) || S_ISFIFO(mode))
 
@@ -285,8 +280,6 @@ typedef struct znode {
 	mutex_tryenter(ZFS_OBJ_MUTEX((zsb), (obj_num)))
 #define	ZFS_OBJ_HOLD_EXIT(zsb, obj_num) \
 	mutex_exit(ZFS_OBJ_MUTEX((zsb), (obj_num)))
-#define	ZFS_OBJ_HOLD_OWNED(zsb, obj_num) \
-	mutex_owned(ZFS_OBJ_MUTEX((zsb), (obj_num)))
 
 /*
  * Macros to encode/decode ZFS stored time values from/to struct timespec
@@ -311,7 +304,7 @@ typedef struct znode {
 #define	CONTENT_MODIFIED	(ATTR_MTIME | ATTR_CTIME)
 
 #define	ZFS_ACCESSTIME_STAMP(zsb, zp) \
-	if ((zsb)->z_atime && !(zfs_is_readonly(zsb))) \
+	if ((zsb)->z_atime && !((zsb)->z_vfs->mnt_flags & MNT_READONLY)) \
 		zfs_tstamp_update_setup(zp, ACCESSED, NULL, NULL, B_FALSE);
 
 extern int	zfs_init_fs(zfs_sb_t *, znode_t **);
@@ -330,7 +323,7 @@ extern void	zfs_zinactive(znode_t *);
 extern void	zfs_znode_delete(znode_t *, dmu_tx_t *);
 extern void	zfs_remove_op_tables(void);
 extern int	zfs_create_op_tables(void);
-extern int	zfs_sync(struct super_block *, int, cred_t *);
+extern int	zfs_sync(zfs_sb_t *, short, cred_t *);
 extern dev_t	zfs_cmpldev(uint64_t);
 extern int	zfs_get_zplprop(objset_t *os, zfs_prop_t prop, uint64_t *value);
 extern int	zfs_get_stats(objset_t *os, nvlist_t *nv);

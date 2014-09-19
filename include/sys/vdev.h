@@ -18,10 +18,8 @@
  *
  * CDDL HEADER END
  */
-
 /*
  * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012 by Delphix. All rights reserved.
  */
 
 #ifndef _SYS_VDEV_H
@@ -45,11 +43,12 @@ typedef enum vdev_dtl_type {
 	DTL_TYPES
 } vdev_dtl_type_t;
 
-extern int zfs_nocacheflush;
+extern boolean_t zfs_nocacheflush;
 
 extern int vdev_open(vdev_t *);
 extern void vdev_open_children(vdev_t *);
-extern int vdev_validate(vdev_t *, boolean_t);
+extern boolean_t vdev_uses_zvols(vdev_t *);
+extern int vdev_validate(vdev_t *);
 extern void vdev_close(vdev_t *);
 extern int vdev_create(vdev_t *, uint64_t txg, boolean_t isreplace);
 extern void vdev_reopen(vdev_t *);
@@ -141,8 +140,8 @@ extern nvlist_t *vdev_config_generate(spa_t *spa, vdev_t *vd,
 struct uberblock;
 extern uint64_t vdev_label_offset(uint64_t psize, int l, uint64_t offset);
 extern int vdev_label_number(uint64_t psise, uint64_t offset);
-extern nvlist_t *vdev_label_read_config(vdev_t *vd, uint64_t txg);
-extern void vdev_uberblock_load(vdev_t *, struct uberblock *, nvlist_t **);
+extern nvlist_t *vdev_label_read_config(vdev_t *vd);
+extern void vdev_uberblock_load(zio_t *zio, vdev_t *vd, struct uberblock *ub);
 
 typedef enum {
 	VDEV_LABEL_CREATE,	/* create/add a new device */

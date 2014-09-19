@@ -34,26 +34,15 @@ extern "C" {
 #include <sys/zio.h>
 #include <sys/dmu.h>
 #include <sys/spa.h>
-#include <sys/refcount.h>
 
 typedef struct arc_buf_hdr arc_buf_hdr_t;
 typedef struct arc_buf arc_buf_t;
-typedef struct arc_prune arc_prune_t;
 typedef void arc_done_func_t(zio_t *zio, arc_buf_t *buf, void *private);
-typedef void arc_prune_func_t(int64_t bytes, void *private);
 typedef int arc_evict_func_t(void *private);
 
 /* generic arc_done_func_t's which you can use */
 arc_done_func_t arc_bcopy_func;
 arc_done_func_t arc_getbuf_func;
-
-/* generic arc_prune_func_t wrapper for callbacks */
-struct arc_prune {
-	arc_prune_func_t	*p_pfunc;
-	void			*p_private;
-	list_node_t		p_node;
-	refcount_t		p_refcnt;
-};
 
 struct arc_buf {
 	arc_buf_hdr_t		*b_hdr;
@@ -109,7 +98,6 @@ int arc_released(arc_buf_t *buf);
 int arc_has_callback(arc_buf_t *buf);
 void arc_buf_freeze(arc_buf_t *buf);
 void arc_buf_thaw(arc_buf_t *buf);
-boolean_t arc_buf_eviction_needed(arc_buf_t *buf);
 #ifdef ZFS_DEBUG
 int arc_referenced(arc_buf_t *buf);
 #endif
@@ -125,13 +113,9 @@ zio_t *arc_write(zio_t *pio, spa_t *spa, uint64_t txg,
     arc_done_func_t *ready, arc_done_func_t *done, void *private,
     int priority, int zio_flags, const zbookmark_t *zb);
 
-arc_prune_t *arc_add_prune_callback(arc_prune_func_t *func, void *private);
-void arc_remove_prune_callback(arc_prune_t *p);
-
 void arc_set_callback(arc_buf_t *buf, arc_evict_func_t *func, void *private);
 int arc_buf_evict(arc_buf_t *buf);
 
-void arc_adjust_meta(int64_t adjustment, boolean_t may_prune);
 void arc_flush(spa_t *spa);
 void arc_tempreserve_clear(uint64_t reserve);
 int arc_tempreserve_space(uint64_t reserve, uint64_t txg);
@@ -150,11 +134,6 @@ void l2arc_init(void);
 void l2arc_fini(void);
 void l2arc_start(void);
 void l2arc_stop(void);
-
-/* Global tunings */
-extern int zfs_write_limit_shift;
-extern unsigned long zfs_write_limit_max;
-extern kmutex_t zfs_write_limit_lock;
 
 #ifdef	__cplusplus
 }

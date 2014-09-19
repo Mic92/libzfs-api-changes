@@ -25,6 +25,10 @@
 #ifndef _SYS_ZFS_DEBUG_H
 #define	_SYS_ZFS_DEBUG_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #ifndef TRUE
 #define	TRUE 1
 #endif
@@ -34,14 +38,14 @@
 #endif
 
 /*
- * ZFS debugging - Always enabled for user space builds.
+ * ZFS debugging
  */
-#if !defined(ZFS_DEBUG) && !defined(_KERNEL)
+
+#if defined(DEBUG) || !defined(_KERNEL)
 #define	ZFS_DEBUG
 #endif
 
 extern int zfs_flags;
-extern int zfs_recover;
 
 #define	ZFS_DEBUG_DPRINTF	0x0001
 #define	ZFS_DEBUG_DBUF_VERIFY	0x0002
@@ -49,33 +53,43 @@ extern int zfs_recover;
 #define	ZFS_DEBUG_SNAPNAMES	0x0008
 #define	ZFS_DEBUG_MODIFY	0x0010
 
+#ifdef ZFS_DEBUG
+#if defined(_KERNEL) && defined(HAVE_SPL)
 /*
- * Always log zfs debug messages to the spl debug subsystem as SS_USER1.
- * When the SPL is configured with debugging enabled these messages will
- * appear in the internal spl debug log, otherwise they are a no-op.
+ * Log ZFS debug messages as the spl SS_USER1 subsystem.
  */
-#if defined(_KERNEL)
-
 #include <spl-debug.h>
-#define	dprintf(...)                                                   \
-	if (zfs_flags & ZFS_DEBUG_DPRINTF)                             \
-		__SDEBUG(NULL, SS_USER1, SD_DPRINTF, __VA_ARGS__)
 
-/*
- * When zfs is running is user space the debugging is always enabled.
- * The messages will be printed using the __dprintf() function and
- * filtered based on the zfs_flags variable.
- */
+#ifdef SS_DEBUG_SUBSYS
+#undef SS_DEBUG_SUBSYS
+#endif
+#define SS_DEBUG_SUBSYS SS_USER1
+#define dprintf(...) SDEBUG_LIMIT(SD_DPRINTF, __VA_ARGS__)
 #else
-#define dprintf(...)                                                   \
-	if (zfs_flags & ZFS_DEBUG_DPRINTF)                             \
+extern void __dprintf(const char *file, const char *func,
+    int line, const char *fmt, ...);
+#define	dprintf(...) \
+	if (zfs_flags & ZFS_DEBUG_DPRINTF) \
 		__dprintf(__FILE__, __func__, __LINE__, __VA_ARGS__)
+#endif /* _KERNEL && HAVE_SPL */
+#else
+#define	dprintf(...) ((void)0)
+#endif /* ZFS_DEBUG */
 
-#endif /* _KERNEL */
+extern void zfs_panic_recover(const char *fmt, ...);
 
-void zfs_panic_recover(const char *fmt, ...);
-#define	zfs_dbgmsg(...)	dprintf(__VA_ARGS__)
-void zfs_dbgmsg_init(void);
-void zfs_dbgmsg_fini(void);
+typedef struct zfs_dbgmsg {
+	list_node_t zdm_node;
+	time_t zdm_timestamp;
+	char zdm_msg[1]; /* variable length allocation */
+} zfs_dbgmsg_t;
+
+extern void zfs_dbgmsg_init(void);
+extern void zfs_dbgmsg_fini(void);
+extern void zfs_dbgmsg(const char *fmt, ...);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif	/* _SYS_ZFS_DEBUG_H */

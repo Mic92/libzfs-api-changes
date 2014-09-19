@@ -22,10 +22,6 @@
  * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
-/*
- * Copyright 2011 Nexenta Systems, Inc. All rights reserved.
- * Copyright (c) 2012, Joyent, Inc. All rights reserved.
- */
 
 #ifndef _SYS_ZFS_CONTEXT_H
 #define	_SYS_ZFS_CONTEXT_H
@@ -61,8 +57,6 @@
 #include <sys/zfs_debug.h>
 #include <sys/fm/fs/zfs.h>
 #include <sys/sunddi.h>
-#include <sys/ctype.h>
-#include <sys/disp.h>
 #include <linux/dcache_compat.h>
 
 #else /* _KERNEL */
@@ -95,7 +89,6 @@
 #include <atomic.h>
 #include <dirent.h>
 #include <time.h>
-#include <ctype.h>
 #include <sys/note.h>
 #include <sys/types.h>
 #include <sys/cred.h>
@@ -138,9 +131,10 @@ extern int aok;
  * ZFS debugging
  */
 
+#ifdef ZFS_DEBUG
 extern void dprintf_setup(int *argc, char **argv);
-extern void __dprintf(const char *file, const char *func,
-    int line, const char *fmt, ...);
+#endif /* ZFS_DEBUG */
+
 extern void cmn_err(int, const char *, ...);
 extern void vcmn_err(int, const char *, __va_list);
 extern void panic(const char *, ...);
@@ -190,13 +184,18 @@ extern void vpanic(const char *, __va_list);
 #define	STACK_SIZE		24576	/* Solaris */
 #endif
 
+#ifdef NPTL_GUARD_WITHIN_STACK
+#define	EXTRA_GUARD_BYTES	PAGESIZE
+#else
+#define	EXTRA_GUARD_BYTES	0
+#endif
+
 /* in libzpool, p0 exists only to have its address taken */
 typedef struct proc {
 	uintptr_t	this_is_never_used_dont_dereference_it;
 } proc_t;
 
 extern struct proc p0;
-#define	curproc		(&p0)
 
 typedef void (*thread_func_t)(void *);
 typedef void (*thread_func_arg_t)(void *);
@@ -214,7 +213,7 @@ typedef struct kthread {
 #define	thread_exit			zk_thread_exit
 #define	thread_create(stk, stksize, func, arg, len, pp, state, pri)	\
 	zk_thread_create(stk, stksize, (thread_func_t)func, arg,	\
-			 len, NULL, state, pri, PTHREAD_CREATE_DETACHED)
+			 len, NULL, state, pri)
 #define	thread_join(t)			zk_thread_join(t)
 #define	newproc(f,a,cid,pri,ctp,pid)	(ENOSYS)
 
@@ -222,11 +221,8 @@ extern kthread_t *zk_thread_current(void);
 extern void zk_thread_exit(void);
 extern kthread_t *zk_thread_create(caddr_t stk, size_t  stksize,
 	thread_func_t func, void *arg, size_t len,
-	proc_t *pp, int state, pri_t pri, int detachstate);
+	proc_t *pp, int state, pri_t pri);
 extern void zk_thread_join(kt_did_t tid);
-
-#define	kpreempt_disable()	((void)0)
-#define	kpreempt_enable()	((void)0)
 
 #define	PS_NONE		-1
 
@@ -314,9 +310,7 @@ extern void cv_wait(kcondvar_t *cv, kmutex_t *mp);
 extern clock_t cv_timedwait(kcondvar_t *cv, kmutex_t *mp, clock_t abstime);
 extern void cv_signal(kcondvar_t *cv);
 extern void cv_broadcast(kcondvar_t *cv);
-#define cv_timedwait_interruptible(cv, mp, at)	cv_timedwait(cv, mp, at)
-#define cv_wait_interruptible(cv, mp)		cv_wait(cv, mp)
-#define cv_wait_io(cv, mp)			cv_wait(cv, mp)
+#define cv_timedwait_interruptible(cv, mp, at)	cv_timedwait(cv, mp, at);
 
 /*
  * kstat creation, installation and deletion
@@ -334,8 +328,6 @@ extern void kstat_delete(kstat_t *);
 #define	KM_NOSLEEP		UMEM_DEFAULT
 #define	KM_NODEBUG		0x0
 #define	KMC_NODEBUG		UMC_NODEBUG
-#define	KMC_KMEM		0x0
-#define	KMC_VMEM		0x0
 #define	kmem_alloc(_s, _f)	umem_alloc(_s, _f)
 #define	kmem_zalloc(_s, _f)	umem_zalloc(_s, _f)
 #define	kmem_free(_b, _s)	umem_free(_b, _s)
@@ -370,16 +362,6 @@ typedef struct taskq taskq_t;
 typedef uintptr_t taskqid_t;
 typedef void (task_func_t)(void *);
 
-typedef struct taskq_ent {
-	struct taskq_ent	*tqent_next;
-	struct taskq_ent	*tqent_prev;
-	task_func_t		*tqent_func;
-	void			*tqent_arg;
-	uintptr_t		tqent_flags;
-} taskq_ent_t;
-
-#define	TQENT_FLAG_PREALLOC	0x1	/* taskq_dispatch_ent used */
-
 #define	TASKQ_PREPOPULATE	0x0001
 #define	TASKQ_CPR_SAFE		0x0002	/* Use CPR safe protocol */
 #define	TASKQ_DYNAMIC		0x0004	/* Use dynamic thread scheduling */
@@ -388,7 +370,6 @@ typedef struct taskq_ent {
 
 #define	TQ_SLEEP	KM_SLEEP	/* Can block for memory */
 #define	TQ_NOSLEEP	KM_NOSLEEP	/* cannot block for memory; may fail */
-#define	TQ_PUSHPAGE	KM_PUSHPAGE	/* Cannot perform I/O */
 #define	TQ_NOQUEUE	0x02		/* Do not enqueue if can't dispatch */
 #define	TQ_FRONT	0x08		/* Queue in front */
 
@@ -400,10 +381,6 @@ extern taskq_t	*taskq_create(const char *, int, pri_t, int, int, uint_t);
 #define	taskq_create_sysdc(a, b, d, e, p, dc, f) \
 	    (taskq_create(a, b, maxclsyspri, d, e, f))
 extern taskqid_t taskq_dispatch(taskq_t *, task_func_t, void *, uint_t);
-extern void	taskq_dispatch_ent(taskq_t *, task_func_t, void *, uint_t,
-    taskq_ent_t *);
-extern int	taskq_empty_ent(taskq_ent_t *);
-extern void	taskq_init_ent(taskq_ent_t *);
 extern void	taskq_destroy(taskq_t *);
 extern void	taskq_wait(taskq_t *);
 extern int	taskq_member(taskq_t *, kthread_t *);
@@ -490,7 +467,7 @@ typedef struct vsecattr {
 
 extern int fop_getattr(vnode_t *vp, vattr_t *vap);
 
-#define	VOP_CLOSE(vp, f, c, o, cr, ct)	vn_close(vp)
+#define	VOP_CLOSE(vp, f, c, o, cr, ct)	0
 #define	VOP_PUTPAGE(vp, of, sz, fl, cr, ct)	0
 #define	VOP_GETATTR(vp, vap, fl, cr, ct)  fop_getattr((vp), (vap));
 
