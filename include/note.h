@@ -24,31 +24,30 @@
  */
 
 /*
- * sys/note.h:	interface for annotating source with info for tools
+ * note.h:      interface for annotating source with info for tools
  *
- * This is the underlying interface; NOTE (/usr/include/note.h) is the
- * preferred interface, but all exported header files should include this
- * file directly and use _NOTE so as not to take "NOTE" from the user's
- * namespace.  For consistency, *all* kernel source should use _NOTE.
- *
- * By default, annotations expand to nothing.  This file implements
- * that.  Tools using annotations will interpose a different version
- * of this file that will expand annotations as needed.
+ * NOTE is the default interface, but if the identifier NOTE is in use for
+ * some other purpose, you may prepare a similar header file using your own
+ * identifier, mapping that identifier to _NOTE.  Also, exported header
+ * files should *not* use NOTE, since the name may already be in use in
+ * a program's namespace.  Rather, exported header files should include
+ * sys/note.h directly and use _NOTE.  For consistency, all kernel source
+ * should use _NOTE.
  */
 
-#ifndef	_SYS_NOTE_H
-#define	_SYS_NOTE_H
+#ifndef _NOTE_H
+#define _NOTE_H
 
-#ifdef	__cplusplus
+#include <sys/note.h>
+
+#ifdef  __cplusplus
 extern "C" {
 #endif
 
-#ifndef _NOTE
-#define	_NOTE(s)
-#endif
+#define NOTE _NOTE
 
-#ifdef	__cplusplus
+#ifdef  __cplusplus
 }
 #endif
 
-#endif	/* _SYS_NOTE_H */
+#endif  /* _NOTE_H */

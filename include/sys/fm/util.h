@@ -20,14 +20,11 @@
  */
 
 /*
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
- * Use is subject to license terms.
+ * Copyright (c) 2004, 2010, Oracle and/or its affiliates. All rights reserved.
  */
 
 #ifndef	_SYS_FM_UTIL_H
 #define	_SYS_FM_UTIL_H
-
-
 
 #ifdef	__cplusplus
 extern "C" {
@@ -74,9 +71,6 @@ typedef struct erpt_dump {
 
 #ifdef _KERNEL
 
-#include <sys/systm.h>
-#include <sys/zfs_ioctl.h>
-
 #define ZEVENT_SHUTDOWN	0x1
 
 typedef void zevent_cb_t(nvlist_t *, nvlist_t *);
@@ -84,26 +78,28 @@ typedef void zevent_cb_t(nvlist_t *, nvlist_t *);
 typedef struct zevent_s {
 	nvlist_t	*ev_nvl;       /* protected by the zevent_lock */
 	nvlist_t	*ev_detector;  /* " */
-	list_t		ev_zpd_list;   /* " */
+	list_t		ev_ze_list;    /* " */
 	list_node_t	ev_node;       /* " */
 	zevent_cb_t	*ev_cb;        /* " */
 } zevent_t;
 
-typedef struct zfs_private_data {
-	zevent_t	*zpd_zevent; /* protected by the zevent_lock */
-	list_node_t	zpd_node;    /* " */
-	uint64_t	zpd_dropped; /* " */
-} zfs_private_data_t;
+typedef struct zfs_zevent {
+	zevent_t	*ze_zevent;    /* protected by the zevent_lock */
+	list_node_t	ze_node;       /* " */
+	uint64_t	ze_dropped;    /* " */
+} zfs_zevent_t;
 
 extern void fm_init(void);
 extern void fm_fini(void);
 extern void fm_nvprint(nvlist_t *);
-extern void fm_zevent_init(zfs_private_data_t *);
-extern void fm_zevent_fini(zfs_private_data_t *);
-extern void fm_zevent_post(nvlist_t *, nvlist_t *, zevent_cb_t *);
-extern void fm_zevent_drain_all(int *);
-extern int fm_zevent_next(zfs_private_data_t *, zfs_cmd_t *);
-extern int fm_zevent_wait(zfs_private_data_t *);
+extern void zfs_zevent_post(nvlist_t *, nvlist_t *, zevent_cb_t *);
+extern void zfs_zevent_drain_all(int *);
+extern int zfs_zevent_fd_hold(int, minor_t *, zfs_zevent_t **);
+extern void zfs_zevent_fd_rele(int);
+extern int zfs_zevent_next(zfs_zevent_t *, nvlist_t **, uint64_t *);
+extern int zfs_zevent_wait(zfs_zevent_t *);
+extern void zfs_zevent_init(zfs_zevent_t **);
+extern void zfs_zevent_destroy(zfs_zevent_t *);
 
 #else
 

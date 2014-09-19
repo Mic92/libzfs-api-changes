@@ -20,8 +20,7 @@
  */
 
 /*
- * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
- * Use is subject to license terms.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  */
 
 #ifndef	_LIBFS_IMPL_H
@@ -71,6 +70,7 @@ struct libzfs_handle {
 	char libzfs_desc[1024];
 	char *libzfs_log_str;
 	int libzfs_printerr;
+	int libzfs_storeerr; /* stuff error messages into buffer */
 	void *libzfs_sharehdl; /* libshare handle */
 	uint_t libzfs_shareflags;
 	boolean_t libzfs_mnttab_enable;
@@ -140,6 +140,7 @@ int zfs_error_fmt(libzfs_handle_t *, int, const char *, ...);
 void zfs_error_aux(libzfs_handle_t *, const char *, ...);
 void *zfs_alloc(libzfs_handle_t *, size_t);
 void *zfs_realloc(libzfs_handle_t *, void *, size_t, size_t);
+char *zfs_asprintf(libzfs_handle_t *, const char *, ...);
 char *zfs_strdup(libzfs_handle_t *, const char *);
 int no_memory(libzfs_handle_t *);
 
@@ -193,6 +194,9 @@ int zpool_open_silent(libzfs_handle_t *, const char *, zpool_handle_t **);
 int zvol_create_link(libzfs_handle_t *, const char *);
 int zvol_remove_link(libzfs_handle_t *, const char *);
 boolean_t zpool_name_valid(libzfs_handle_t *, boolean_t, const char *);
+
+int zfs_validate_name(libzfs_handle_t *hdl, const char *path, int type,
+    boolean_t modifying);
 
 void namespace_clear(libzfs_handle_t *);
 
