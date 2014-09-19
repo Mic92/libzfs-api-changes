@@ -19,7 +19,7 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -33,11 +33,6 @@
 extern "C" {
 #endif
 
-typedef struct tx_cb {
-	tx_cpu_t	*tcb_tc;
-	uint64_t	tcb_txg;
-} tx_cb_t;
-
 struct tx_cpu {
 	kmutex_t	tc_lock;
 	kcondvar_t	tc_cv[TXG_SIZE];
@@ -49,7 +44,6 @@ struct tx_cpu {
 typedef struct tx_state {
 	tx_cpu_t	*tx_cpu;	/* protects right to enter txg	*/
 	kmutex_t	tx_sync_lock;	/* protects tx_state_t */
-	krwlock_t	tx_suspend;
 	uint64_t	tx_open_txg;	/* currently open txg id */
 	uint64_t	tx_quiesced_txg; /* quiesced txg waiting for sync */
 	uint64_t	tx_syncing_txg;	/* currently syncing txg id */

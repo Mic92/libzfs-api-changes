@@ -19,7 +19,7 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -210,8 +210,7 @@ extern "C" {
  *
  * ds_lock
  *    protects:
- *    	ds_user_ptr
- *    	ds_user_evict_func
+ *    	ds_objset
  *    	ds_open_refcount
  *    	ds_snapname
  *    	ds_phys accounting
@@ -232,6 +231,13 @@ extern "C" {
 
 struct objset;
 struct dmu_pool;
+
+typedef struct dmu_xuio {
+	int next;
+	int cnt;
+	struct arc_buf **bufs;
+	iovec_t *iovp;
+} dmu_xuio_t;
 
 #ifdef	__cplusplus
 }

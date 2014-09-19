@@ -19,7 +19,7 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -77,6 +77,7 @@ enum dmu_tx_hold_type {
 	THT_FREE,
 	THT_ZAP,
 	THT_SPACE,
+	THT_SPILL,
 	THT_NUMTYPES
 };
 
@@ -115,7 +116,7 @@ void dmu_tx_wait(dmu_tx_t *tx);
 
 void dmu_tx_callback_register(dmu_tx_t *tx, dmu_tx_callback_func_t *dcb_func,
     void *dcb_data);
-void dmu_tx_callback(list_t *cb_list, int error);
+void dmu_tx_do_callbacks(list_t *cb_list, int error);
 
 /*
  * These routines are defined in dmu_spa.h, and are called by the SPA.

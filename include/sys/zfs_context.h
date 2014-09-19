@@ -59,6 +59,7 @@ extern "C" {
 #include <sys/uio.h>
 #include <sys/zfs_debug.h>
 #include <sys/fm/fs/zfs.h>
+#include <sys/sunddi.h>
 
 #ifdef	__cplusplus
 }
