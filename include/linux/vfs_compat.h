@@ -27,19 +27,6 @@
 #define _ZFS_VFS_H
 
 /*
- * 2.6.35 API change,
- * The dentry argument to the .fsync() vfs hook was deemed unused by
- * all filesystem consumers and dropped.  Add a compatibility prototype
- * to ensure correct usage when defining this callback.
- */
-#ifdef HAVE_2ARGS_FSYNC
-#define ZPL_FSYNC_PROTO(fn, x, y, z)	static int fn(struct file *x, int z)
-#else
-#define ZPL_FSYNC_PROTO(fn, x, y, z)	static int fn(struct file *x, \
-						      struct dentry *y, int z)
-#endif /* HAVE_2ARGS_FSYNC */
-
-/*
  * 2.6.28 API change,
  * Added insert_inode_locked() helper function, prior to this most callers
  * used insert_inode_hash().  The older method doesn't check for collisions
@@ -53,5 +40,26 @@ insert_inode_locked(struct inode *ip)
 	return (0);
 }
 #endif /* HAVE_INSERT_INODE_LOCKED */
+
+/*
+ * 2.6.35 API change,
+ * Add truncate_setsize() if it is not exported by the Linux kernel.
+ *
+ * Truncate the inode and pages associated with the inode. The pages are
+ * unmapped and removed from cache.
+ */
+#ifndef HAVE_TRUNCATE_SETSIZE
+static inline void
+truncate_setsize(struct inode *ip, loff_t new)
+{
+	struct address_space *mapping = ip->i_mapping;
+
+	i_size_write(ip, new);
+
+	unmap_mapping_range(mapping, new + PAGE_SIZE - 1, 0, 1);
+	truncate_inode_pages(mapping, new);
+	unmap_mapping_range(mapping, new + PAGE_SIZE - 1, 0, 1);
+}
+#endif /* HAVE_TRUNCATE_SETSIZE */
 
 #endif /* _ZFS_VFS_H */
