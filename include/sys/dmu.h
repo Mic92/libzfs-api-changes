@@ -38,12 +38,14 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/cred.h>
+#ifdef _KERNEL
+#include <sys/blkdev.h>
+#endif
 
 #ifdef	__cplusplus
 extern "C" {
 #endif
 
-struct uio;
 struct page;
 struct vnode;
 struct spa;
@@ -490,10 +492,11 @@ void dmu_write(objset_t *os, uint64_t object, uint64_t offset, uint64_t size,
 	const void *buf, dmu_tx_t *tx);
 void dmu_prealloc(objset_t *os, uint64_t object, uint64_t offset, uint64_t size,
 	dmu_tx_t *tx);
-#if defined(_KERNEL) && defined(HAVE_UIO_RW)
-int dmu_read_uio(objset_t *os, uint64_t object, struct uio *uio, uint64_t size);
-int dmu_write_uio(objset_t *os, uint64_t object, struct uio *uio, uint64_t size,
-    dmu_tx_t *tx);
+#ifdef _KERNEL
+int dmu_read_req(objset_t *os, uint64_t object, struct request *req);
+int dmu_write_req(objset_t *os, uint64_t object, struct request *req, dmu_tx_t *tx);
+#endif
+#ifdef HAVE_ZPL
 int dmu_write_pages(objset_t *os, uint64_t object, uint64_t offset,
     uint64_t size, struct page *pp, dmu_tx_t *tx);
 #endif
