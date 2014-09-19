@@ -24,14 +24,17 @@
  * Use is subject to license terms.
  */
 
-#include_next <sys/socket.h>
+#include_next <limits.h>
 
-#ifndef _PORT_SYS_SOCKET_H
-#define _PORT_SYS_SOCKET_H
+#ifndef _LIBSPL_LIMITS_H
+#define _LIBSPL_LIMITS_H
 
-/* Solaris doesn't have MSG_NOSIGNAL */
-#ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL 0
-#endif
+#define DBL_DIG		15
+#define DBL_MAX		1.7976931348623157081452E+308
+#define DBL_MIN		2.2250738585072013830903E-308
 
-#endif
+#define FLT_DIG		6
+#define FLT_MAX		3.4028234663852885981170E+38F
+#define FLT_MIN		1.1754943508222875079688E-38F
+
+#endif /* _LIBSPL_LIMITS_H */

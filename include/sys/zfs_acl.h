@@ -179,6 +179,7 @@ typedef struct zfs_acl {
 #define	ZFS_ACL_GROUPMASK	2
 #define	ZFS_ACL_PASSTHROUGH	3
 #define	ZFS_ACL_RESTRICTED	4
+#define	ZFS_ACL_PASSTHROUGH_X	5
 
 struct znode;
 struct zfsvfs;

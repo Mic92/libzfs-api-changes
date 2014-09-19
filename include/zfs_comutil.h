@@ -26,6 +26,8 @@
 #ifndef	_ZFS_COMUTIL_H
 #define	_ZFS_COMUTIL_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #include <sys/fs/zfs.h>
 #include <sys/types.h>
 

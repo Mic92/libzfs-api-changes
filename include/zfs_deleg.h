@@ -26,6 +26,8 @@
 #ifndef	_ZFS_DELEG_H
 #define	_ZFS_DELEG_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #include <sys/fs/zfs.h>
 
 #ifdef	__cplusplus

@@ -26,19 +26,12 @@
 #ifndef _SYS_ZFS_CONTEXT_H
 #define	_SYS_ZFS_CONTEXT_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
 
-#if defined(_KERNEL)
-#if defined(HAVE_SPL)
-
-/* Linux kernel headers (SPL) */
-#include <sys/zfs_context_spl.h>
-
-#else
-
-/* Solaris kernel headers */
 #include <sys/note.h>
 #include <sys/types.h>
 #include <sys/t_lock.h>
@@ -70,16 +63,6 @@ extern "C" {
 #include <sys/sysevent.h>
 #include <sys/sysevent/eventdefs.h>
 #include <sys/fm/util.h>
-
-#define	CPU_SEQID	(CPU->cpu_seqid)
-
-#endif /* HAVE_SPL */
-#else
-
-/* Userspace headers */
-#include <sys/zfs_context_user.h>
-
-#endif /* _KERNEL */
 
 #ifdef	__cplusplus
 }

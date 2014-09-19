@@ -19,12 +19,14 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
 #ifndef	_SYS_DMU_TX_H
 #define	_SYS_DMU_TX_H
+
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
 
 #include <sys/inttypes.h>
 #include <sys/dmu.h>
@@ -57,7 +59,6 @@ struct dmu_tx {
 	txg_handle_t tx_txgh;
 	void *tx_tempreserve_cookie;
 	struct dmu_tx_hold *tx_needassign_txh;
-	list_t tx_callbacks; /* list of dmu_callback_t on this dmu_tx */
 	uint8_t tx_anyobj;
 	int tx_err;
 #ifdef ZFS_DEBUG
@@ -88,6 +89,8 @@ typedef struct dmu_tx_hold {
 	uint64_t txh_space_tofree;
 	uint64_t txh_space_tooverwrite;
 	uint64_t txh_space_tounref;
+	uint64_t txh_memory_tohold;
+	uint64_t txh_fudge;
 #ifdef ZFS_DEBUG
 	enum dmu_tx_hold_type txh_type;
 	uint64_t txh_arg1;
@@ -105,11 +108,6 @@ void dmu_tx_commit(dmu_tx_t *tx);
 void dmu_tx_abort(dmu_tx_t *tx);
 uint64_t dmu_tx_get_txg(dmu_tx_t *tx);
 void dmu_tx_wait(dmu_tx_t *tx);
-
-void *dmu_tx_callback_data_create(size_t bytes);
-int dmu_tx_callback_commit_add(dmu_tx_t *tx, dmu_callback_func_t *dcb_func,
-    void *dcb_data);
-int dmu_tx_callback_data_destroy(void *dcb_data);
 
 /*
  * These routines are defined in dmu_spa.h, and are called by the SPA.

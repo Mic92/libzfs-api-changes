@@ -26,8 +26,6 @@
 #ifndef _SYS_ACL_IMPL_H
 #define	_SYS_ACL_IMPL_H
 
-
-
 #ifdef	__cplusplus
 extern "C" {
 #endif

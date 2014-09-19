@@ -20,31 +20,53 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
-#ifndef _SOL_SYS_TYPES_H
-#define _SOL_SYS_TYPES_H
+#ifndef _LIBSPL_SYS_TYPES_H
+#define _LIBSPL_SYS_TYPES_H
 
 #include <sys/isa_defs.h>
 #include <sys/feature_tests.h>
 #include_next <sys/types.h>
 #include <sys/param.h> /* for NBBY */
 #include <sys/types32.h>
+#include <sys/va_list.h>
 
-typedef longlong_t offset_t;
-typedef u_longlong_t u_offset_t;
-typedef u_longlong_t len_t;
-typedef longlong_t diskaddr_t;
+#ifndef HAVE_INTTYPES
+#include <inttypes.h>
 
-typedef short pri_t;
+typedef enum boolean { B_FALSE, B_TRUE } boolean_t;
 
-typedef int zoneid_t;
-typedef int projid_t;
+typedef unsigned char	uchar_t;
+typedef unsigned short	ushort_t;
+typedef unsigned int	uint_t;
+typedef unsigned long	ulong_t;
 
-typedef int major_t;
-typedef int minor_t;
+typedef long long	longlong_t;
+typedef unsigned long long u_longlong_t;
+#endif /* HAVE_INTTYPES */
+
+typedef longlong_t	offset_t;
+typedef u_longlong_t	u_offset_t;
+typedef u_longlong_t	len_t;
+typedef longlong_t	diskaddr_t;
+
+typedef ulong_t		pfn_t;          /* page frame number */
+typedef ulong_t		pgcnt_t;        /* number of pages */
+typedef long		spgcnt_t;       /* signed number of pages */
+
+typedef longlong_t	hrtime_t;
+typedef struct timespec	timestruc_t;
+
+typedef short		pri_t;
+
+typedef int		zoneid_t;
+typedef int		projid_t;
+
+typedef int		major_t;
+typedef int		minor_t;
 
 typedef ushort_t o_mode_t; /* old file attribute type */
 
@@ -72,7 +94,5 @@ typedef union {
 	} _p;
 } lloff_t;
 #endif
-
-#include <sys/time.h>
 
 #endif

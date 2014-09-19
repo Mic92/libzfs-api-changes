@@ -20,27 +20,11 @@
  * CDDL HEADER END
  */
 /*
- * Copyright (c) 1998 by Sun Microsystems, Inc.
- * All rights reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
+ * Use is subject to license terms.
  */
 
-#ifndef _SYS_COMPRESS_H
-#define	_SYS_COMPRESS_H
+#ifndef _LIBSPL_SYS_COMPRESS_H
+#define _LIBSPL_SYS_COMPRESS_H
 
-
-
-#include <sys/types.h>
-
-#ifdef	__cplusplus
-extern "C" {
-#endif
-
-extern size_t compress(void *, void *, size_t);
-extern size_t decompress(void *, void *, size_t, size_t);
-extern uint32_t checksum32(void *, size_t);
-
-#ifdef	__cplusplus
-}
-#endif
-
-#endif	/* _SYS_COMPRESS_H */
+#endif /* _LIBSPL_SYS_COMPRESS_H */

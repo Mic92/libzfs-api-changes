@@ -24,17 +24,12 @@
  * Use is subject to license terms.
  */
 
-#ifndef _PORT_SYS_SYSTM_H
-#define _PORT_SYS_SYSTM_H
+#include_next <locale.h>
 
-#ifdef WANT_KERNEL_EMUL
+#ifndef _LIBSPL_LOCALE_H
+#define _LIBSPL_LOCALE_H
 
-#include <sys/dmu_ctl.h>
+#include <time.h>
+#include <sys/time.h>
 
-#define copyinstr(from,to,max,len) dctls_copyinstr(from,to,max,len)
-#define xcopyin(src,dest,size)     dctls_copyin(src,dest,size)
-#define xcopyout(src,dest,size)    dctls_copyout(src,dest,size)
-
-#endif /* WANT_KERNEL_EMUL */
-
-#endif /* _PORT_SYS_SYSM_H */
+#endif

@@ -6,13 +6,13 @@
  * (the "License").  You may not use this file except in compliance
  * with the License.
  *
- * You can obtain a copy of the license at usr/src/OPENSOLARIS.LICENSE
+ * You can obtain a copy of the license at usr/src/OPENLIBSPLARIS.LICENSE
  * or http://www.opensolaris.org/os/licensing.
  * See the License for the specific language governing permissions
  * and limitations under the License.
  *
  * When distributing Covered Code, include this CDDL HEADER in each
- * file and include the License file at usr/src/OPENSOLARIS.LICENSE.
+ * file and include the License file at usr/src/OPENLIBSPLARIS.LICENSE.
  * If applicable, add the following below this CDDL HEADER, with the
  * fields enclosed by brackets "[]" replaced with your own identifying
  * information: Portions Copyright [yyyy] [name of copyright owner]
@@ -24,12 +24,11 @@
  * Use is subject to license terms.
  */
 
-#ifndef _SOL_UTSNAME_H
-#define _SOL_UTSNAME_H
+#ifndef _LIBSPL_UTSNAME_H
+#define _LIBSPL_UTSNAME_H
 
 #include_next <sys/utsname.h>
 
 struct utsname utsname;
 
-#endif
-
+#endif  /* _LIBSPL_UTSNAME_H */

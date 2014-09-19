@@ -24,17 +24,9 @@
  * Use is subject to license terms.
  */
 
-#include "zfs_config.h"
+#ifndef _LIBSPL_SYS_SYSTEMINFO_H
+#define _LIBSPL_SYS_SYSTEMINFO_H
 
-#ifdef HAVE_SYS_SYSTEMINFO_H
-#include_next <sys/systeminfo.h>
-#endif
-
-#ifndef _PORT_SYS_SYSTEMINFO_H
-#define _PORT_SYS_SYSTEMINFO_H
-
-#ifndef HAVE_SYSINFO_IN_SYSTEMINFO_H
-#define sysinfo(cmd,buf,cnt) (-1)
-#endif
+#define sysinfo(cmd,buf,cnt)		(-1)
 
 #endif

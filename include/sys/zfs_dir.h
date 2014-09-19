@@ -26,6 +26,8 @@
 #ifndef	_SYS_FS_ZFS_DIR_H
 #define	_SYS_FS_ZFS_DIR_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #include <sys/pathname.h>
 #include <sys/dmu.h>
 #include <sys/zfs_znode.h>

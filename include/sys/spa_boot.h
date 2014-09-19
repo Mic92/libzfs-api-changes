@@ -26,16 +26,17 @@
 #ifndef _SYS_SPA_BOOT_H
 #define	_SYS_SPA_BOOT_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #include <sys/nvpair.h>
 
 #ifdef	__cplusplus
 extern "C" {
 #endif
 
-extern char *spa_get_bootfs(void);
-extern void spa_free_bootfs(char *bootfs);
-extern int spa_get_rootconf(char *devpath, char **bestdev_p,
-    nvlist_t **bestconf_p);
+extern char *spa_get_bootprop(char *prop);
+extern void spa_free_bootprop(char *prop);
+extern int spa_get_rootconf(char *devpath, char *devid, nvlist_t **bestconf_p);
 
 #ifdef	__cplusplus
 }

@@ -26,6 +26,8 @@
 #ifndef	_SYS_UNIQUE_H
 #define	_SYS_UNIQUE_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #include <sys/zfs_context.h>
 
 #ifdef	__cplusplus

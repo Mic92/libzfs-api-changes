@@ -26,6 +26,8 @@
 #ifndef	_DFETCH_H
 #define	_DFETCH_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #include <sys/zfs_context.h>
 
 #ifdef	__cplusplus

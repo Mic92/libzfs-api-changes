@@ -19,7 +19,7 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -114,9 +114,12 @@ extern "C" {
 
 /*
  * Convert mode bits (zp_mode) to BSD-style DT_* values for storing in
- * the directory entries.
+ * the directory entries.  On Linux systems this value is already
+ * defined correctly as part of the /usr/include/dirent.h header file.
  */
+#ifndef IFTODT
 #define	IFTODT(mode) (((mode) & S_IFMT) >> 12)
+#endif
 
 /*
  * The directory entry has the type (currently unused on Solaris) in the
@@ -255,12 +258,29 @@ typedef struct znode {
  * Macros for dealing with dmu_buf_hold
  */
 #define	ZFS_OBJ_HASH(obj_num)	((obj_num) & (ZFS_OBJ_MTX_SZ - 1))
-#define	ZFS_OBJ_MUTEX(zp)	\
-	(&(zp)->z_zfsvfs->z_hold_mtx[ZFS_OBJ_HASH((zp)->z_id)])
+#define	ZFS_OBJ_MUTEX(zfsvfs, obj_num)	\
+	(&(zfsvfs)->z_hold_mtx[ZFS_OBJ_HASH(obj_num)])
 #define	ZFS_OBJ_HOLD_ENTER(zfsvfs, obj_num) \
-	mutex_enter(&(zfsvfs)->z_hold_mtx[ZFS_OBJ_HASH(obj_num)]);
+	mutex_enter(ZFS_OBJ_MUTEX((zfsvfs), (obj_num)))
+#define	ZFS_OBJ_HOLD_TRYENTER(zfsvfs, obj_num) \
+	mutex_tryenter(ZFS_OBJ_MUTEX((zfsvfs), (obj_num)))
 #define	ZFS_OBJ_HOLD_EXIT(zfsvfs, obj_num) \
-	mutex_exit(&(zfsvfs)->z_hold_mtx[ZFS_OBJ_HASH(obj_num)])
+	mutex_exit(ZFS_OBJ_MUTEX((zfsvfs), (obj_num)))
+
+/*
+ * Macros to encode/decode ZFS stored time values from/to struct timespec
+ */
+#define	ZFS_TIME_ENCODE(tp, stmp)		\
+{						\
+	(stmp)[0] = (uint64_t)(tp)->tv_sec;	\
+	(stmp)[1] = (uint64_t)(tp)->tv_nsec;	\
+}
+
+#define	ZFS_TIME_DECODE(tp, stmp)		\
+{						\
+	(tp)->tv_sec = (time_t)(stmp)[0];		\
+	(tp)->tv_nsec = (long)(stmp)[1];		\
+}
 
 /*
  * Timestamp defines
@@ -273,8 +293,10 @@ typedef struct znode {
 	if ((zfsvfs)->z_atime && !((zfsvfs)->z_vfs->vfs_flag & VFS_RDONLY)) \
 		zfs_time_stamper(zp, ACCESSED, NULL)
 
-extern int	zfs_init_fs(zfsvfs_t *, znode_t **, cred_t *);
+extern int	zfs_init_fs(zfsvfs_t *, znode_t **);
 extern void	zfs_set_dataprop(objset_t *);
+extern void	zfs_create_fs(objset_t *os, cred_t *cr, nvlist_t *,
+    dmu_tx_t *tx);
 extern void	zfs_time_stamper(znode_t *, uint_t, dmu_tx_t *);
 extern void	zfs_time_stamper_locked(znode_t *, uint_t, dmu_tx_t *);
 extern void	zfs_grow_blocksize(znode_t *, uint64_t, dmu_tx_t *);
@@ -290,6 +312,8 @@ extern void	zfs_remove_op_tables(void);
 extern int	zfs_create_op_tables(void);
 extern int	zfs_sync(vfs_t *vfsp, short flag, cred_t *cr);
 extern dev_t	zfs_cmpldev(uint64_t);
+extern int	zfs_get_zplprop(objset_t *os, zfs_prop_t prop, uint64_t *value);
+extern int	zfs_set_version(const char *name, uint64_t newvers);
 extern int	zfs_get_stats(objset_t *os, nvlist_t *nv);
 extern void	zfs_znode_dmu_fini(znode_t *);
 
@@ -317,36 +341,17 @@ extern void zfs_log_acl(zilog_t *zilog, dmu_tx_t *tx, znode_t *zp,
 extern void zfs_xvattr_set(znode_t *zp, xvattr_t *xvap);
 extern void zfs_upgrade(zfsvfs_t *zfsvfs, dmu_tx_t *tx);
 
+#if defined(HAVE_UIO_RW)
+extern caddr_t zfs_map_page(page_t *, enum seg_rw);
+extern void zfs_unmap_page(page_t *, caddr_t);
+#endif /* HAVE_UIO_RW */
+
 extern zil_get_data_t zfs_get_data;
 extern zil_replay_func_t *zfs_replay_vector[TX_MAX_TYPE];
 extern int zfsfstype;
 
 #endif /* _KERNEL */
 
-#if defined(_KERNEL) || defined(WANT_KERNEL_EMUL)
-
-extern int zfs_get_zplprop(objset_t *os, zfs_prop_t prop, uint64_t *value);
-extern int zfs_set_version(const char *name, uint64_t newvers);
-
-#endif
-
-/*
- * Macros to encode/decode ZFS stored time values from/to struct timespec
- */
-#define	ZFS_TIME_ENCODE(tp, stmp)		\
-{						\
-	(stmp)[0] = (uint64_t)(tp)->tv_sec; 	\
-	(stmp)[1] = (uint64_t)(tp)->tv_nsec;	\
-}
-
-#define	ZFS_TIME_DECODE(tp, stmp)		\
-{						\
-	(tp)->tv_sec = (time_t)(stmp)[0];		\
-	(tp)->tv_nsec = (long)(stmp)[1];		\
-}
-
-extern void zfs_create_fs(objset_t *os, cred_t *cr, nvlist_t *,
-    dmu_tx_t *tx);
 extern int zfs_obj_to_path(objset_t *osp, uint64_t obj, char *buf, int len);
 
 #ifdef	__cplusplus

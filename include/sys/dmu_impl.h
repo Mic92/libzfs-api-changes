@@ -19,7 +19,7 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -49,7 +49,7 @@ extern "C" {
  * XXX try to improve evicting path?
  *
  * dp_config_rwlock > os_obj_lock > dn_struct_rwlock >
- * 	dn_dbufs_mtx > hash_mutexes > db_mtx > leafs
+ * 	dn_dbufs_mtx > hash_mutexes > db_mtx > dd_lock > leafs
  *
  * dp_config_rwlock
  *    must be held before: everything
@@ -175,7 +175,10 @@ extern "C" {
  *   	dmu_tx_try_assign: dn_notxholds(cv)
  *   	dmu_tx_unassign: none
  *
- * dd_lock (leaf)
+ * dd_lock
+ *    must be held before:
+ *      ds_lock
+ *      ancestors' dd_lock
  *    protects:
  *    	dd_prop_cbs
  *    	dd_sync_*
@@ -205,13 +208,14 @@ extern "C" {
  *   	dnode_setdirty: none (dn_dirtyblksz, os_*_dnodes)
  *   	dnode_free: none (dn_dirtyblksz, os_*_dnodes)
  *
- * ds_lock (leaf)
+ * ds_lock
  *    protects:
  *    	ds_user_ptr
  *    	ds_user_evice_func
  *    	ds_open_refcount
  *    	ds_snapname
  *    	ds_phys accounting
+ *	ds_reserved
  *    held from:
  *    	dsl_dataset_*
  *
@@ -227,22 +231,6 @@ extern "C" {
 
 struct objset;
 struct dmu_pool;
-
-#define DMU_CALLBACK_MAGIC 0xca11bac0ca11bacfull
-
-/* container_of() already defined in linux kernel */
-#ifndef container_of
-#define container_of(ptr, type, member) \
-    ((type *)((char *)(ptr) - offsetof(type, member)))
-#endif
-
-typedef struct dmu_callback {
-	list_node_t         dcb_node;    /* linked to tx_callbacks list */
-	uint64_t            dcb_magic;   /* magic number to verify header */
-	dmu_callback_func_t *dcb_func;   /* caller function pointer */
-	size_t              dcb_bytes;   /* caller private data size */
-	char                dcb_data[0]; /* caller private data */
-} dmu_callback_t;
 
 #ifdef	__cplusplus
 }

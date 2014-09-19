@@ -20,16 +20,13 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
-#ifndef _SOL_LIBGEN_H
-#define _SOL_LIBGEN_H
+#ifndef _LIBSPL_TZFILE_H
+#define _LIBSPL_TZFILE_H
 
-#include_next <libgen.h>
-#include <sys/types.h>
+#include <sys/tzfile.h>
 
-extern int mkdirp(const char *path, mode_t mode);
-
-#endif
+#endif /* _LIBSPL_TZFILE_H */

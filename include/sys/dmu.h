@@ -64,7 +64,6 @@ struct objset_impl;
 typedef struct objset objset_t;
 typedef struct dmu_tx dmu_tx_t;
 typedef struct dsl_dir dsl_dir_t;
-typedef void dmu_callback_func_t(void *dcb_data, int error);
 
 typedef enum dmu_object_type {
 	DMU_OT_NONE,
@@ -113,6 +112,8 @@ typedef enum dmu_object_type {
 	DMU_OT_SYSACL,			/* SYSACL */
 	DMU_OT_FUID,			/* FUID table (Packed NVLIST UINT8) */
 	DMU_OT_FUID_SIZE,		/* FUID table size UINT64 */
+	DMU_OT_NEXT_CLONES,		/* ZAP */
+	DMU_OT_SCRUB_QUEUE,		/* ZAP */
 	DMU_OT_NUMTYPES
 } dmu_object_type_t;
 
@@ -135,12 +136,11 @@ void zfs_oldacl_byteswap(void *buf, size_t size);
 void zfs_acl_byteswap(void *buf, size_t size);
 void zfs_znode_byteswap(void *buf, size_t size);
 
-#define	DS_MODE_NONE		0	/* invalid, to aid debugging */
-#define	DS_MODE_STANDARD	1	/* normal access, no special needs */
-#define	DS_MODE_PRIMARY		2	/* the "main" access, e.g. a mount */
-#define	DS_MODE_EXCLUSIVE	3	/* exclusive access, e.g. to destroy */
-#define	DS_MODE_LEVELS		4
-#define	DS_MODE_LEVEL(x)	((x) & (DS_MODE_LEVELS - 1))
+#define	DS_MODE_NOHOLD		0	/* internal use only */
+#define	DS_MODE_USER		1	/* simple access, no special needs */
+#define	DS_MODE_OWNER		2	/* the "main" access, e.g. a mount */
+#define	DS_MODE_TYPE_MASK	0x3
+#define	DS_MODE_TYPE(x)		((x) & DS_MODE_TYPE_MASK)
 #define	DS_MODE_READONLY	0x8
 #define	DS_MODE_IS_READONLY(x)	((x) & DS_MODE_READONLY)
 #define	DS_MODE_INCONSISTENT	0x10
@@ -154,6 +154,7 @@ void zfs_znode_byteswap(void *buf, size_t size);
  * operation, including metadata.
  */
 #define DMU_MAX_ACCESS		(10<<20) /* 10MB */
+#define DMU_MAX_DELETEBLKCNT	(20480) /* ~5MB of indirect blocks */
 #define DMU_WRITE_ZEROCOPY	0x0001
 #define DMU_READ_ZEROCOPY	0x0002
 
@@ -202,6 +203,19 @@ typedef void dmu_buf_evict_func_t(struct dmu_buf *db, void *user_ptr);
 #define	DMU_POOL_HISTORY		"history"
 #define	DMU_POOL_PROPS			"pool_props"
 #define	DMU_POOL_L2CACHE		"l2cache"
+
+/* 4x8 zbookmark_t */
+#define	DMU_POOL_SCRUB_BOOKMARK		"scrub_bookmark"
+/* 1x8 zap obj DMU_OT_SCRUB_QUEUE */
+#define	DMU_POOL_SCRUB_QUEUE		"scrub_queue"
+/* 1x8 txg */
+#define	DMU_POOL_SCRUB_MIN_TXG		"scrub_min_txg"
+/* 1x8 txg */
+#define	DMU_POOL_SCRUB_MAX_TXG		"scrub_max_txg"
+/* 1x4 enum scrub_func */
+#define	DMU_POOL_SCRUB_FUNC		"scrub_func"
+/* 1x8 count */
+#define	DMU_POOL_SCRUB_ERRORS		"scrub_errors"
 
 /*
  * Allocate an object from this objset.  The range of object numbers
@@ -418,37 +432,14 @@ void dmu_tx_wait(dmu_tx_t *tx);
 void dmu_tx_commit(dmu_tx_t *tx);
 
 /*
- * To add a commit callback, you must first call dmu_tx_callback_data_create().
- * This will return a pointer to a memory area of size "bytes" (which can be 0,
- * or just the size of a pointer if there is a large or existing external data
- * struct to be referenced) that the caller and the callback can use to exchange
- * data.
- *
- * The callback can then be registered by calling dmu_tx_callback_commit_add()
- * with the pointer returned by dmu_tx_callback_data_create() passed in the
- * dcb_data argument. The transaction must be already created, but it cannot
- * be committed or aborted. It can be assigned to a txg or not.
- *
- * The callback will be called after the transaction has been safely written
- * to stable storage and will also be called if the dmu_tx is aborted.
- * If there is any error which prevents the transaction from being committed
- * to disk, the callback will be called with a value of error != 0.
- *
- * When the callback data is no longer needed, it must be destroyed by the
- * caller's code with dmu_tx_callback_data_destroy(). This is typically done at
- * the end of the callback function.
- */
-void *dmu_tx_callback_data_create(size_t bytes);
-int dmu_tx_callback_commit_add(dmu_tx_t *tx, dmu_callback_func_t *dcb_func,
-    void *dcb_data);
-int dmu_tx_callback_data_destroy(void *dcb_data);
-
-/*
  * Free up the data blocks for a defined range of a file.  If size is
  * zero, the range from offset to end-of-file is freed.
  */
 int dmu_free_range(objset_t *os, uint64_t object, uint64_t offset,
 	uint64_t size, dmu_tx_t *tx);
+int dmu_free_long_range(objset_t *os, uint64_t object, uint64_t offset,
+	uint64_t size);
+int dmu_free_object(objset_t *os, uint64_t object);
 
 /*
  * Convenience functions.
@@ -464,6 +455,8 @@ void dmu_write_impl(objset_t *os, uint64_t object, uint64_t offset, uint64_t siz
 	const void *buf, dmu_tx_t *tx, int flags);
 void dmu_write(objset_t *os, uint64_t object, uint64_t offset, uint64_t size,
 	const void *buf, dmu_tx_t *tx);
+void dmu_prealloc(objset_t *os, uint64_t object, uint64_t offset, uint64_t size,
+	dmu_tx_t *tx);
 #if defined(_KERNEL) && defined(HAVE_UIO_RW)
 int dmu_read_uio(objset_t *os, uint64_t object, struct uio *uio, uint64_t size);
 int dmu_write_uio(objset_t *os, uint64_t object, struct uio *uio, uint64_t size,
@@ -617,13 +610,8 @@ typedef void (*dmu_traverse_cb_t)(objset_t *os, void *arg, struct blkptr *bp,
 void dmu_traverse_objset(objset_t *os, uint64_t txg_start,
     dmu_traverse_cb_t cb, void *arg);
 
-#ifdef _KERNEL
 int dmu_sendbackup(objset_t *tosnap, objset_t *fromsnap, boolean_t fromorigin,
     struct vnode *vp, offset_t *off);
-#else
-int dmu_sendbackup(objset_t *tosnap, objset_t *fromsnap, boolean_t fromorigin,
-    int fd, offset_t *off);
-#endif
 
 typedef struct dmu_recv_cookie {
 	/*
@@ -643,11 +631,7 @@ typedef struct dmu_recv_cookie {
 
 int dmu_recv_begin(char *tofs, char *tosnap, struct drr_begin *,
     boolean_t force, objset_t *origin, boolean_t online, dmu_recv_cookie_t *);
-#ifdef _KERNEL
 int dmu_recv_stream(dmu_recv_cookie_t *drc, struct vnode *vp, offset_t *voffp);
-#else
-int dmu_recv_stream(dmu_recv_cookie_t *drc, int fd, offset_t *voffp);
-#endif
 int dmu_recv_end(dmu_recv_cookie_t *drc);
 void dmu_recv_abort_cleanup(dmu_recv_cookie_t *drc);
 

@@ -24,19 +24,71 @@
  * Use is subject to license terms.
  */
 
-#ifndef _SOL_ASSERT_H
-#define _SOL_ASSERT_H
-
 #include_next <assert.h>
+
+#ifndef _LIBSPL_ASSERT_H
+#define _LIBSPL_ASSERT_H
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #ifndef __assert_c99
-static inline void __assert_c99(const char *expr, const char *file, int line, const char *func)
+static inline void
+__assert_c99(const char *expr, const char *file, int line, const char *func)
 {
-	fprintf(stderr, "%s:%i: %s: Assertion `%s` failed.\n", file, line, func, expr);
+	fprintf(stderr, "%s:%i: %s: Assertion `%s` failed.\n",
+		file, line, func, expr);
 	abort();
 }
-#endif
+#endif  /* __assert_c99 */
 
-#endif
+#ifndef verify
+#if defined(__STDC__)
+#if __STDC_VERSION__ - 0 >= 199901L
+#define	verify(EX) (void)((EX) || \
+	(__assert_c99(#EX, __FILE__, __LINE__, __func__), 0))
+#else
+#define	verify(EX) (void)((EX) || (__assert(#EX, __FILE__, __LINE__), 0))
+#endif  /* __STDC_VERSION__ - 0 >= 199901L */
+#else
+#define	verify(EX) (void)((EX) || (_assert("EX", __FILE__, __LINE__), 0))
+#endif	/* __STDC__ */
+#endif  /* verify */
+
+#undef VERIFY
+#undef ASSERT
+
+#define	VERIFY	verify
+#define	ASSERT	assert
+
+extern void __assert(const char *, const char *, int);
+
+/* BEGIN CSTYLED */
+#define	VERIFY3_IMPL(LEFT, OP, RIGHT, TYPE) do { \
+	const TYPE __left = (TYPE)(LEFT); \
+	const TYPE __right = (TYPE)(RIGHT); \
+	if (!(__left OP __right)) { \
+		char *__buf = alloca(256); \
+		(void) snprintf(__buf, 256, "%s %s %s (0x%llx %s 0x%llx)", \
+			#LEFT, #OP, #RIGHT, \
+			(u_longlong_t)__left, #OP, (u_longlong_t)__right); \
+		__assert(__buf, __FILE__, __LINE__); \
+	} \
+_NOTE(CONSTCOND) } while (0)
+/* END CSTYLED */
+
+#define	VERIFY3S(x, y, z)	VERIFY3_IMPL(x, y, z, int64_t)
+#define	VERIFY3U(x, y, z)	VERIFY3_IMPL(x, y, z, uint64_t)
+#define	VERIFY3P(x, y, z)	VERIFY3_IMPL(x, y, z, uintptr_t)
+
+#ifdef NDEBUG
+#define	ASSERT3S(x, y, z)	((void)0)
+#define	ASSERT3U(x, y, z)	((void)0)
+#define	ASSERT3P(x, y, z)	((void)0)
+#else
+#define	ASSERT3S(x, y, z)	VERIFY3S(x, y, z)
+#define	ASSERT3U(x, y, z)	VERIFY3U(x, y, z)
+#define	ASSERT3P(x, y, z)	VERIFY3P(x, y, z)
+#endif  /* NDEBUG */
+
+#endif  /* _LIBSPL_ASSERT_H */

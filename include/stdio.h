@@ -20,17 +20,15 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
-#ifndef _SOL_DIRENT_H
-#define _SOL_DIRENT_H
+#include_next <stdio.h>
 
-#include_next <dirent.h>
+#ifndef _LIBSPL_STDIO_H
+#define _LIBSPL_STDIO_H
 
-#ifdef IFTODT
-#undef IFTODT
-#endif
+#define enable_extended_FILE_stdio(fd, sig)	((void) 0)
 
 #endif

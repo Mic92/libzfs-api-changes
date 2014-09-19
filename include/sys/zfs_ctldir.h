@@ -26,6 +26,8 @@
 #ifndef	_ZFS_CTLDIR_H
 #define	_ZFS_CTLDIR_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #include <sys/pathname.h>
 #include <sys/vnode.h>
 #include <sys/zfs_vfsops.h>

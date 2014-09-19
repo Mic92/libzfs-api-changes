@@ -26,6 +26,8 @@
 #ifndef	_SYS_DSL_SYNCTASK_H
 #define	_SYS_DSL_SYNCTASK_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #include <sys/txg.h>
 #include <sys/zfs_context.h>
 

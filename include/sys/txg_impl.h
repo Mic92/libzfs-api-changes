@@ -37,7 +37,6 @@ struct tx_cpu {
 	kmutex_t	tc_lock;
 	kcondvar_t	tc_cv[TXG_SIZE];
 	uint64_t	tc_count[TXG_SIZE];
-	list_t		tc_callbacks[TXG_SIZE]; /* post-commit callbacks */
 	char		tc_pad[16];
 };
 
@@ -65,7 +64,6 @@ typedef struct tx_state {
 
 	kthread_t	*tx_sync_thread;
 	kthread_t	*tx_quiesce_thread;
-	kthread_t	*tx_timelimit_thread;
 } tx_state_t;
 
 #ifdef	__cplusplus

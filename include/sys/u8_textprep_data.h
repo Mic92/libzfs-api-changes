@@ -65,14 +65,10 @@
  * This file has been modified by Sun Microsystems, Inc.
  */
 
-#include "zfs_config.h"
-
-#ifdef HAVE_UNICODE
-#include_next <sys/u8_textprep_data.h>
-#else
-
 #ifndef _SYS_U8_TEXTPREP_DATA_H
 #define	_SYS_U8_TEXTPREP_DATA_H
+
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
 
 #include <sys/types.h>
 
@@ -35376,7 +35372,5 @@ static const uchar_t u8_toupper_final_tbl[2][2318] = {
 #ifdef	__cplusplus
 }
 #endif
-
-#endif /* HAVE_UNICODE */
 
 #endif	/* _SYS_U8_TEXTPREP_DATA_H */

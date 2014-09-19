@@ -29,4 +29,8 @@
 
 #include <stdarg.h>
 
+#ifndef __va_list
+typedef __gnuc_va_list __va_list;
+#endif
+
 #endif

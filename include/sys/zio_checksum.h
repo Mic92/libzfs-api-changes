@@ -19,7 +19,7 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -62,7 +62,7 @@ extern zio_checksum_t fletcher_4_incremental_byteswap;
 
 extern zio_checksum_t zio_checksum_SHA256;
 
-extern void zio_checksum(uint_t checksum, zio_cksum_t *zcp,
+extern void zio_checksum_compute(zio_t *zio, enum zio_checksum checksum,
     void *data, uint64_t size);
 extern int zio_checksum_error(zio_t *zio);
 

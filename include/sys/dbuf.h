@@ -19,7 +19,7 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -53,19 +53,23 @@ extern "C" {
 #define	DB_RF_CACHED		(1 << 5)
 
 /*
- * The state transition diagram for dbufs looks like:
+ * The simplified state transition diagram for dbufs looks like:
  *
  *		+----> READ ----+
  *		|		|
  *		|		V
  *  (alloc)-->UNCACHED	     CACHED-->EVICTING-->(free)
- *		|		^
- *		|		|
- *		+----> FILL ----+
+ *		|		^	 ^
+ *		|		|	 |
+ *		+----> FILL ----+	 |
+ *		|			 |
+ *		|			 |
+ *		+--------> NOFILL -------+
  */
 typedef enum dbuf_states {
 	DB_UNCACHED,
 	DB_FILL,
+	DB_NOFILL,
 	DB_READ,
 	DB_CACHED,
 	DB_EVICTING
@@ -80,9 +84,6 @@ struct dmu_tx;
  * level = 1 means the single indirect block
  * etc.
  */
-
-#define	LIST_LINK_INACTIVE(link) \
-	((link)->list_next == NULL && (link)->list_prev == NULL)
 
 struct dmu_buf_impl;
 
@@ -256,8 +257,8 @@ dmu_buf_impl_t *dbuf_find(struct dnode *dn, uint8_t level, uint64_t blkid);
 
 int dbuf_read(dmu_buf_impl_t *db, zio_t *zio, uint32_t flags);
 void dbuf_will_dirty(dmu_buf_impl_t *db, dmu_tx_t *tx);
-void dmu_buf_will_fill(dmu_buf_t *db, dmu_tx_t *tx);
 void dbuf_fill_done(dmu_buf_impl_t *db, dmu_tx_t *tx);
+void dmu_buf_will_not_fill(dmu_buf_t *db, dmu_tx_t *tx);
 void dmu_buf_will_fill(dmu_buf_t *db, dmu_tx_t *tx);
 void dmu_buf_fill_done(dmu_buf_t *db, dmu_tx_t *tx);
 dbuf_dirty_record_t *dbuf_dirty(dmu_buf_impl_t *db, dmu_tx_t *tx);
@@ -269,7 +270,7 @@ void dbuf_setdirty(dmu_buf_impl_t *db, dmu_tx_t *tx);
 void dbuf_unoverride(dbuf_dirty_record_t *dr);
 void dbuf_sync_list(list_t *list, dmu_tx_t *tx);
 
-void dbuf_free_range(struct dnode *dn, uint64_t blkid, uint64_t nblks,
+void dbuf_free_range(struct dnode *dn, uint64_t start, uint64_t end,
     struct dmu_tx *);
 
 void dbuf_new_size(dmu_buf_impl_t *db, int size, dmu_tx_t *tx);
@@ -277,10 +278,21 @@ void dbuf_new_size(dmu_buf_impl_t *db, int size, dmu_tx_t *tx);
 void dbuf_init(void);
 void dbuf_fini(void);
 
-#define	DBUF_GET_BUFC_TYPE(db)					\
-	((((db)->db_level > 0) ||				\
-	    (dmu_ot[(db)->db_dnode->dn_type].ot_metadata)) ?	\
-	    ARC_BUFC_METADATA : ARC_BUFC_DATA);
+#define	DBUF_IS_METADATA(db)	\
+	((db)->db_level > 0 || dmu_ot[(db)->db_dnode->dn_type].ot_metadata)
+
+#define	DBUF_GET_BUFC_TYPE(db)	\
+	(DBUF_IS_METADATA(db) ? ARC_BUFC_METADATA : ARC_BUFC_DATA)
+
+#define	DBUF_IS_CACHEABLE(db)						\
+	((db)->db_objset->os_primary_cache == ZFS_CACHE_ALL ||		\
+	(DBUF_IS_METADATA(db) &&					\
+	((db)->db_objset->os_primary_cache == ZFS_CACHE_METADATA)))
+
+#define	DBUF_IS_L2CACHEABLE(db)						\
+	((db)->db_objset->os_secondary_cache == ZFS_CACHE_ALL ||	\
+	(DBUF_IS_METADATA(db) &&					\
+	((db)->db_objset->os_secondary_cache == ZFS_CACHE_METADATA)))
 
 #ifdef ZFS_DEBUG
 

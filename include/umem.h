@@ -20,67 +20,150 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2004 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
-#ifndef _UMEM_H
-#define	_UMEM_H
+#ifndef _LIBSPL_UMEM_H
+#define _LIBSPL_UMEM_H
 
+/* XXX: We should use the real portable umem library if it is detected
+ * at configure time.  However, if the library is not available we can
+ * use a trivial malloc based implementation.  This obviously impacts
+ * performance but unless you using a full userspace build of zpool for
+ * something other than ztest your likely not going to notice or care.
+ *
+ * https://labs.omniti.com/trac/portableumem
+ */
 
-
-#include <sys/types.h>
-#include <sys/vmem.h>
 #include <stdlib.h>
 
-#ifdef	__cplusplus
+#ifdef  __cplusplus
 extern "C" {
 #endif
 
-#define	UMEM_DEFAULT	0x0000	/* normal -- may fail */
-#define	UMEM_NOFAIL	0x0100	/* Never fails -- may call exit(2) */
+typedef void vmem_t;
 
-#define	UMEM_FLAGS	0xffff	/* all settable umem flags */
-
-extern void *umem_alloc(size_t, int);
-extern void *umem_alloc_align(size_t, size_t, int);
-extern void *umem_zalloc(size_t, int);
-extern void umem_free(void *, size_t);
-extern void umem_free_align(void *, size_t);
+/*
+ * Flags for umem_alloc/umem_free
+ */
+#define UMEM_DEFAULT		0x0000  /* normal -- may fail */
+#define UMEM_NOFAIL		0x0100  /* Never fails */
 
 /*
  * Flags for umem_cache_create()
  */
-#define	UMC_NOTOUCH	0x00010000
-#define	UMC_NODEBUG	0x00020000
-#define	UMC_NOMAGAZINE	0x00040000
-#define	UMC_NOHASH	0x00080000
+#define UMC_NOTOUCH		0x00010000
+#define UMC_NODEBUG		0x00020000
+#define UMC_NOMAGAZINE		0x00040000
+#define UMC_NOHASH		0x00080000
 
-struct umem_cache;		/* cache structure is opaque to umem clients */
+#define UMEM_CACHE_NAMELEN	31
 
-typedef struct umem_cache umem_cache_t;
+typedef int umem_nofail_callback_t(void);
 typedef int umem_constructor_t(void *, void *, int);
 typedef void umem_destructor_t(void *, void *);
 typedef void umem_reclaim_t(void *);
 
-typedef int umem_nofail_callback_t(void);
-#define	UMEM_CALLBACK_RETRY		0
-#define	UMEM_CALLBACK_EXIT(status)	(0x100 | ((status) & 0xFF))
+typedef struct umem_cache {
+	char			cache_name[UMEM_CACHE_NAMELEN + 1];
+	size_t			cache_bufsize;
+	size_t			cache_align;
+	umem_constructor_t	*cache_constructor;
+	umem_destructor_t	*cache_destructor;
+	umem_reclaim_t		*cache_reclaim;
+	void			*cache_private;
+	void			*cache_arena;
+	int			cache_cflags;
+} umem_cache_t;
 
-extern void umem_nofail_callback(umem_nofail_callback_t *);
+static inline void *
+umem_alloc(size_t size, int flags)
+{
+	void *ptr;
 
-extern umem_cache_t *umem_cache_create(char *, size_t,
-    size_t, umem_constructor_t *, umem_destructor_t *, umem_reclaim_t *,
-    void *, vmem_t *, int);
-extern void umem_cache_destroy(umem_cache_t *);
+	ptr = malloc(size);
+	while (ptr == NULL && (flags & UMEM_NOFAIL))
+		ptr = malloc(size);
 
-extern void *umem_cache_alloc(umem_cache_t *, int);
-extern void umem_cache_free(umem_cache_t *, void *);
+	return ptr;
+}
 
-extern void umem_reap(void);
+static inline void *
+umem_zalloc(size_t size, int flags)
+{
+	void *ptr;
 
-#ifdef	__cplusplus
+	ptr = umem_alloc(size, flags);
+	if (ptr)
+		memset(ptr, 0, size);
+
+	return ptr;
+}
+
+static inline void
+umem_free(void *ptr, size_t size)
+{
+	free(ptr);
+}
+
+static inline void
+umem_nofail_callback(umem_nofail_callback_t *cb) {}
+
+static inline umem_cache_t *
+umem_cache_create(char *name, size_t bufsize, size_t align,
+                  umem_constructor_t *constructor,
+                  umem_destructor_t *destructor,
+                  umem_reclaim_t *reclaim,
+		  void *priv, void *vmp, int cflags)
+{
+	umem_cache_t *cp;
+
+	cp = umem_alloc(sizeof(umem_cache_t), UMEM_DEFAULT);
+	if (cp) {
+		strncpy(cp->cache_name, name, UMEM_CACHE_NAMELEN);
+		cp->cache_bufsize = bufsize;
+		cp->cache_align = align;
+		cp->cache_constructor = constructor;
+		cp->cache_destructor = destructor;
+		cp->cache_reclaim = reclaim;
+		cp->cache_private = priv;
+		cp->cache_arena = vmp;
+		cp->cache_cflags = cflags;
+	}
+
+	return cp;
+}
+
+static inline void
+umem_cache_destroy(umem_cache_t *cp)
+{
+	umem_free(cp, sizeof(umem_cache_t));
+}
+
+static inline void *
+umem_cache_alloc(umem_cache_t *cp, int flags)
+{
+	void *ptr;
+
+	ptr = umem_alloc(cp->cache_bufsize, flags);
+	if (ptr && cp->cache_constructor)
+		cp->cache_constructor(ptr, cp->cache_private, UMEM_DEFAULT);
+
+	return ptr;
+}
+
+static inline void
+umem_cache_free(umem_cache_t *cp, void *ptr)
+{
+	if (cp->cache_destructor)
+		cp->cache_destructor(ptr, cp->cache_private);
+
+	umem_free(ptr, cp->cache_bufsize);
+}
+
+#ifdef  __cplusplus
 }
 #endif
 
-#endif	/* _UMEM_H */
+#endif

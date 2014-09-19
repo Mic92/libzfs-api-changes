@@ -28,7 +28,7 @@
 
 
 
-#include <sys/int_types.h>
+#include <sys/inttypes.h>
 
 #ifdef	__cplusplus
 extern "C" {

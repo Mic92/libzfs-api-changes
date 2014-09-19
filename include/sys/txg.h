@@ -26,6 +26,8 @@
 #ifndef _SYS_TXG_H
 #define	_SYS_TXG_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #include <sys/spa.h>
 #include <sys/zfs_context.h>
 
@@ -69,7 +71,6 @@ extern void txg_sync_stop(struct dsl_pool *dp);
 extern uint64_t txg_hold_open(struct dsl_pool *dp, txg_handle_t *txghp);
 extern void txg_rele_to_quiesce(txg_handle_t *txghp);
 extern void txg_rele_to_sync(txg_handle_t *txghp);
-extern void txg_rele_commit_cb(txg_handle_t *txghp, list_t *tx_callbacks);
 extern void txg_suspend(struct dsl_pool *dp);
 extern void txg_resume(struct dsl_pool *dp);
 
@@ -101,7 +102,10 @@ extern void txg_wait_open(struct dsl_pool *dp, uint64_t txg);
  * Returns TRUE if we are "backed up" waiting for the syncing
  * transaction to complete; otherwise returns FALSE.
  */
-extern int txg_stalled(struct dsl_pool *dp);
+extern boolean_t txg_stalled(struct dsl_pool *dp);
+
+/* returns TRUE if someone is waiting for the next txg to sync */
+extern boolean_t txg_sync_waiting(struct dsl_pool *dp);
 
 /*
  * Per-txg object lists.

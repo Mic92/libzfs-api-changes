@@ -26,8 +26,6 @@
 #ifndef _SYS_ACL_H
 #define	_SYS_ACL_H
 
-
-
 #include <sys/types.h>
 #include <sys/acl_impl.h>
 

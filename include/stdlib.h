@@ -26,13 +26,9 @@
 
 #include_next <stdlib.h>
 
-#ifndef _PORT_STDLIB_H
-#define _PORT_STDLIB_H
+#ifndef _LIBSPL_STDLIB_H
+#define _LIBSPL_STDLIB_H
 
-#include "zfs_config.h"
-
-#ifndef HAVE_GETEXECNAME
 extern const char *getexecname(void);
-#endif
 
 #endif

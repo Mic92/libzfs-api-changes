@@ -24,12 +24,10 @@
  * Use is subject to license terms.
  */
 
-#ifndef _SOL_SYS_SYSMACROS_H
-#define _SOL_SYS_SYSMACROS_H
+#ifndef _LIBSPL_SYS_SYSMACROS_H
+#define _LIBSPL_SYS_SYSMACROS_H
 
 #include_next <sys/sysmacros.h>
-
-#define makedevice(maj,min) makedev(maj,min)
 
 /* common macros */
 #ifndef MIN
@@ -42,20 +40,26 @@
 #define ABS(a)          ((a) < 0 ? -(a) : (a))
 #endif
 
+#define makedevice(maj,min)	makedev(maj,min)
+#define _sysconf(a)		sysconf(a)
+#define __NORETURN		__attribute__ ((noreturn))
+
 /*
  * Compatibility macros/typedefs needed for Solaris -> Linux port
  */
-#define P2ALIGN(x, align)    ((x) & -(align))
-#define P2CROSS(x, y, align) (((x) ^ (y)) > (align) - 1)
-#define P2ROUNDUP(x, align)  (-(-(x) & -(align)))
+#define P2ALIGN(x, align)	((x) & -(align))
+#define P2CROSS(x, y, align)	(((x) ^ (y)) > (align) - 1)
+#define P2ROUNDUP(x, align)	(-(-(x) & -(align)))
 #define P2ROUNDUP_TYPED(x, align, type) \
-                             (-(-(type)(x) & -(type)(align)))
-#define P2PHASE(x, align)    ((x) & ((align) - 1))
-#define P2NPHASE(x, align)   (-(x) & ((align) - 1))
+				(-(-(type)(x) & -(type)(align)))
+#define P2BOUNDARY(off, len, align) \
+				(((off) ^ ((off) + (len) - 1)) > (align) - 1)
+#define P2PHASE(x, align)	((x) & ((align) - 1))
+#define P2NPHASE(x, align)	(-(x) & ((align) - 1))
 #define P2NPHASE_TYPED(x, align, type) \
-                             (-(type)(x) & ((type)(align) - 1))
-#define ISP2(x)              (((x) & ((x) - 1)) == 0)
-#define IS_P2ALIGNED(v, a)   ((((uintptr_t)(v)) & ((uintptr_t)(a) - 1)) == 0)
+				(-(type)(x) & ((type)(align) - 1))
+#define ISP2(x)			(((x) & ((x) - 1)) == 0)
+#define IS_P2ALIGNED(v, a)	((((uintptr_t)(v)) & ((uintptr_t)(a) - 1)) == 0)
 
 /*
  * Typed version of the P2* macros.  These macros should be used to ensure
@@ -85,11 +89,10 @@
 #define P2SAMEHIGHBIT_TYPED(x, y, type) \
         (((type)(x) ^ (type)(y)) < ((type)(x) & (type)(y)))
 
-#if defined(_KERNEL) && !defined(_KMEMUSER) && !defined(offsetof)
 
 /* avoid any possibility of clashing with <stddef.h> version */
-
+#if defined(_KERNEL) && !defined(_KMEMUSER) && !defined(offsetof)
 #define	offsetof(s, m)	((size_t)(&(((s *)0)->m)))
 #endif
 
-#endif
+#endif /* _LIBSPL_SYS_SYSMACROS_H */

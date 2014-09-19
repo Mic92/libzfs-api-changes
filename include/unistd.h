@@ -26,18 +26,24 @@
 
 #include_next <unistd.h>
 
-#ifndef _PORT_UNISTD_H
-#define _PORT_UNISTD_H
+#ifndef _LIBSPL_UNISTD_H
+#define _LIBSPL_UNISTD_H
 
-#include "zfs_config.h"
+#include <zfs_config.h>
 
-#ifndef HAVE_ISSETUGID
-#include <sys/types.h>
-#define issetugid() (geteuid() == 0 || getegid() == 0)
+#if !defined(HAVE_IOCTL_IN_UNISTD_H)
+# if defined(HAVE_IOCTL_IN_SYS_IOCTL_H)
+#  include <sys/ioctl.h>
+# elif defined(HAVE_IOCTL_IN_STROPTS_H)
+#  include <stropts.h>
+# else
+#  error "System call ioctl() unavailable"
+# endif
 #endif
 
-#ifdef HAVE_IOCTL_IN_UNISTD_H
-#include <fake_ioctl.h>
+#if !defined(HAVE_ISSETUGID)
+# include <sys/types.h>
+# define issetugid() (geteuid() == 0 || getegid() == 0)
 #endif
 
 #if !defined(__sun__) && !defined(__sun)
@@ -50,4 +56,4 @@ static inline long fake_gethostid(void)
 #define gethostid() fake_gethostid()
 #endif
 
-#endif /* _PORT_UNISTD_H */
+#endif /* _LIBSPL_UNISTD_H */

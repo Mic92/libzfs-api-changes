@@ -24,29 +24,27 @@
  * Use is subject to license terms.
  */
 
-#ifndef _SOL_SYS_MOUNT_H
-#define _SOL_SYS_MOUNT_H
-
 #include_next <sys/mount.h>
 
-#include <sys/mntent.h>
+#ifndef _LIBSPL_SYS_MOUNT_H
+#define _LIBSPL_SYS_MOUNT_H
 
+#include <sys/mntent.h>
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 
-/* LINUX */
 /*
  * Some old glibc headers don't define BLKGETSIZE64
  * and we don't want to require the kernel headers
  */
 #if !defined(BLKGETSIZE64)
-#define BLKGETSIZE64 _IOR(0x12,114,size_t)
+#define BLKGETSIZE64		_IOR(0x12, 114, size_t)
 #endif
 
-#define MS_FORCE     MNT_FORCE
-#define MS_OVERLAY   32768
-#define MS_NOMNTTAB  0         /* Not supported in Linux */
-#define MS_OPTIONSTR 0         /* Not necessary in Linux */
+#define MS_FORCE		MNT_FORCE
+#define MS_OVERLAY		32768
+#define MS_NOMNTTAB		0         /* Not supported in Linux */
+#define MS_OPTIONSTR		0         /* Not necessary in Linux */
 
-#endif
+#endif /* _LIBSPL_SYS_MOUNT_H */

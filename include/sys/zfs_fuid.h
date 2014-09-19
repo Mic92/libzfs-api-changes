@@ -26,6 +26,8 @@
 #ifndef	_SYS_FS_ZFS_FUID_H
 #define	_SYS_FS_ZFS_FUID_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #ifdef _KERNEL
 #include <sys/kidmap.h>
 #include <sys/sid.h>
@@ -33,7 +35,6 @@
 #include <sys/zfs_vfsops.h>
 #endif
 #include <sys/avl.h>
-#include <sys/list.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -99,7 +100,7 @@ typedef struct zfs_fuid_info {
 } zfs_fuid_info_t;
 
 #ifdef _KERNEL
-#ifndef HAVE_SPL
+#ifdef HAVE_ZPL
 struct znode;
 extern uid_t zfs_fuid_map_id(zfsvfs_t *, uint64_t, cred_t *, zfs_fuid_type_t);
 extern void zfs_fuid_destroy(zfsvfs_t *);
@@ -112,7 +113,8 @@ extern void zfs_fuid_map_ids(struct znode *zp, cred_t *cr, uid_t *uid,
 extern zfs_fuid_info_t *zfs_fuid_info_alloc(void);
 extern void zfs_fuid_info_free();
 extern boolean_t zfs_groupmember(zfsvfs_t *, uint64_t, cred_t *);
-#endif /* !HAVE_SPL */
+#endif /* HAVE_ZPL */
+#endif
 
 char *zfs_fuid_idx_domain(avl_tree_t *, uint32_t);
 uint64_t zfs_fuid_table_load(objset_t *, uint64_t, avl_tree_t *, avl_tree_t *);
@@ -120,7 +122,6 @@ void zfs_fuid_table_destroy(avl_tree_t *, avl_tree_t *);
 
 #ifdef	__cplusplus
 }
-#endif
 #endif
 
 #endif	/* _SYS_FS_ZFS_FUID_H */

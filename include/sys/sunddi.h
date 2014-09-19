@@ -20,31 +20,10 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
- * Use is subject to license terms.
+ * Copyright (c) 2008 by Sun Microsystems, Inc.
  */
 
-#ifndef _SOL_SUNDDI_H
-#define _SOL_SUNDDI_H
+#ifndef	_SYS_SUNDDI_H
+#define	_SYS_SUNDDI_H
 
-#ifdef _KERNEL
-
-#include <string.h>
-#include <errno.h>
-
-#include <sys/u8_textprep.h>
-
-static inline int
-ddi_strtoul(const char *hw_serial, char **nptr, int base, unsigned long *result)
-{
-	char *end;
-
-	*result = strtoul(hw_serial, &end, base);
-	if (*result == 0)
-		return (errno);
-	return (0);
-}
-#endif
-
-#endif
-
+#endif	/* _SYS_SUNDDI_H */

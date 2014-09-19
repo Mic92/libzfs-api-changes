@@ -20,27 +20,17 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
+#ifndef _LIBSPL_STRING_H
+#define _LIBSPL_STRING_H
+
 #include_next <string.h>
 
-#ifndef _PORT_STRING_H
-#define _PORT_STRING_H
-
-#include "zfs_config.h"
-
-#ifndef HAVE_STRLCPY
+extern size_t strlcat(char *dst, const char *src, size_t dstsize);
 extern size_t strlcpy(char *dst, const char *src, size_t len);
-#endif
-
-#ifndef HAVE_STRLCAT
-extern size_t strlcat(char *, const char *, size_t);
-#endif
-
-#ifndef HAVE_STRNLEN
-extern size_t strnlen(const char *src, size_t maxlen);
-#endif
+extern size_t strnlen(const char *str, size_t maxlen);
 
 #endif

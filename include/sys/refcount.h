@@ -26,6 +26,8 @@
 #ifndef	_SYS_REFCOUNT_H
 #define	_SYS_REFCOUNT_H
 
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 #include <sys/inttypes.h>
 #include <sys/list.h>
 #include <sys/zfs_context.h>

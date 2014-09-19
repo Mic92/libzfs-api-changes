@@ -23,14 +23,10 @@
  * Use is subject to license terms.
  */
 
-#include "zfs_config.h"
-
-#ifdef HAVE_UNICODE
-#include_next <sys/u8_textprep.h>
-#else
-
 #ifndef	_SYS_U8_TEXTPREP_H
 #define	_SYS_U8_TEXTPREP_H
+
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
 
 #include <sys/isa_defs.h>
 #include <sys/types.h>
@@ -113,7 +109,5 @@ extern size_t u8_textprep_str(char *, size_t *, char *, size_t *, int, size_t,
 #ifdef	__cplusplus
 }
 #endif
-
-#endif /* HAVE_UNICODE */
 
 #endif	/* _SYS_U8_TEXTPREP_H */
