@@ -19,14 +19,12 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
 #ifndef _SYS_ZFS_CONTEXT_H
 #define	_SYS_ZFS_CONTEXT_H
-
-
 
 #ifdef	__cplusplus
 extern "C" {
@@ -60,8 +58,11 @@ extern "C" {
 #include <sys/zone.h>
 #include <sys/uio.h>
 #include <sys/zfs_debug.h>
+#ifdef HAVE_SYSEVENT
 #include <sys/sysevent.h>
 #include <sys/sysevent/eventdefs.h>
+#include <sys/sysevent/dev.h>
+#endif /* HAVE_SYSEVENT */
 #include <sys/fm/util.h>
 
 #ifdef	__cplusplus
