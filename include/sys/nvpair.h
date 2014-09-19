@@ -26,7 +26,7 @@
 #ifndef	_SYS_NVPAIR_H
 #define	_SYS_NVPAIR_H
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 
 #include <sys/types.h>
 #include <sys/errno.h>
@@ -100,9 +100,7 @@ typedef struct nvlist {
 
 /* nvlist pack encoding */
 #define	NV_ENCODE_NATIVE	0
-#if defined(HAVE_XDR)
 #define	NV_ENCODE_XDR		1
-#endif
 
 /* nvlist persistent unique name flags, stored in nvl_nvflags */
 #define	NV_UNIQUE_NAME		0x1

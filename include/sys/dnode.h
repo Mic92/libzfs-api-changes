@@ -19,7 +19,7 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -160,6 +160,7 @@ typedef struct dnode {
 	uint16_t dn_datablkszsec;	/* in 512b sectors */
 	uint32_t dn_datablksz;		/* in bytes */
 	uint64_t dn_maxblkid;
+	uint8_t dn_next_nblkptr[TXG_SIZE];
 	uint8_t dn_next_nlevels[TXG_SIZE];
 	uint8_t dn_next_indblkshift[TXG_SIZE];
 	uint16_t dn_next_bonuslen[TXG_SIZE];
@@ -221,6 +222,7 @@ void dnode_free(dnode_t *dn, dmu_tx_t *tx);
 void dnode_byteswap(dnode_phys_t *dnp);
 void dnode_buf_byteswap(void *buf, size_t size);
 void dnode_verify(dnode_t *dn);
+void dnode_verify_clean(dnode_t *dn);
 int dnode_set_blksz(dnode_t *dn, uint64_t size, int ibs, dmu_tx_t *tx);
 uint64_t dnode_current_max_length(dnode_t *dn);
 void dnode_free_range(dnode_t *dn, uint64_t off, uint64_t len, dmu_tx_t *tx);
@@ -258,12 +260,14 @@ void dnode_evict_dbufs(dnode_t *dn);
 _NOTE(CONSTCOND) } while (0)
 
 #define	DNODE_VERIFY(dn)		dnode_verify(dn)
+#define	DNODE_VERIFY_CLEAN(dn)		dnode_verify_clean(dn)
 #define	FREE_VERIFY(db, start, end, tx)	free_verify(db, start, end, tx)
 
 #else
 
 #define	dprintf_dnode(db, fmt, ...)
 #define	DNODE_VERIFY(dn)
+#define	DNODE_VERIFY_CLEAN(dn)
 #define	FREE_VERIFY(db, start, end, tx)
 
 #endif

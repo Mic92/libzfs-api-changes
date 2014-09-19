@@ -19,7 +19,7 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -46,17 +46,17 @@ extern "C" {
  * Additional file level attributes, that are stored
  * in the upper half of zp_flags
  */
-#define	ZFS_READONLY		0x0000000100000000
-#define	ZFS_HIDDEN		0x0000000200000000
-#define	ZFS_SYSTEM		0x0000000400000000
-#define	ZFS_ARCHIVE		0x0000000800000000
-#define	ZFS_IMMUTABLE		0x0000001000000000
-#define	ZFS_NOUNLINK		0x0000002000000000
-#define	ZFS_APPENDONLY		0x0000004000000000
-#define	ZFS_NODUMP		0x0000008000000000
-#define	ZFS_OPAQUE		0x0000010000000000
-#define	ZFS_AV_QUARANTINED 	0x0000020000000000
-#define	ZFS_AV_MODIFIED 	0x0000040000000000
+#define	ZFS_READONLY		0x0000000100000000ull
+#define	ZFS_HIDDEN		0x0000000200000000ull
+#define	ZFS_SYSTEM		0x0000000400000000ull
+#define	ZFS_ARCHIVE		0x0000000800000000ull
+#define	ZFS_IMMUTABLE		0x0000001000000000ull
+#define	ZFS_NOUNLINK		0x0000002000000000ull
+#define	ZFS_APPENDONLY		0x0000004000000000ull
+#define	ZFS_NODUMP		0x0000008000000000ull
+#define	ZFS_OPAQUE		0x0000010000000000ull
+#define	ZFS_AV_QUARANTINED 	0x0000020000000000ull
+#define	ZFS_AV_MODIFIED 	0x0000040000000000ull
 
 #define	ZFS_ATTR_SET(zp, attr, value)	\
 { \
@@ -185,7 +185,6 @@ typedef struct znode {
 	vnode_t		*z_vnode;
 	uint64_t	z_id;		/* object ID for this znode */
 	kmutex_t	z_lock;		/* znode modification lock */
-	krwlock_t	z_map_lock;	/* page map lock */
 	krwlock_t	z_parent_lock;	/* parent lock for directories */
 	krwlock_t	z_name_lock;	/* "master" lock for dirent locks */
 	zfs_dirlock_t	*z_dirlocks;	/* directory entry lock list */

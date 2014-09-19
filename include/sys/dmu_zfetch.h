@@ -26,7 +26,7 @@
 #ifndef	_DFETCH_H
 #define	_DFETCH_H
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
 
 #include <sys/zfs_context.h>
 
@@ -65,6 +65,9 @@ typedef struct zfetch {
 
 void		dmu_zfetch_init(zfetch_t *, struct dnode *);
 void		dmu_zfetch_rele(zfetch_t *);
+void		dmu_zfetch_cons(zfetch_t *);
+void		dmu_zfetch_dest(zfetch_t *);
+
 void		dmu_zfetch(zfetch_t *, uint64_t, uint64_t, int);
 
 
