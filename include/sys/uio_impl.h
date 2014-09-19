@@ -18,25 +18,32 @@
  *
  * CDDL HEADER END
  */
-
 /*
- * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
-#ifndef _LIBSPL_LIBSHARE_H
-#define _LIBSPL_LIBSHARE_H
 
-typedef void *sa_handle_t;	/* opaque handle to access core functions */
-typedef void *sa_group_t;
-typedef void *sa_share_t;
+/*	Copyright (c) 1984, 1986, 1987, 1988, 1989 AT&T	*/
+/*	  All Rights Reserved	*/
 
-/* API Initialization */
-#define	SA_INIT_SHARE_API	0x0001	/* init share specific interface */
-#define	SA_INIT_CONTROL_API	0x0002	/* init control specific interface */
+/*
+ * University Copyright- Copyright (c) 1982, 1986, 1988
+ * The Regents of the University of California
+ * All Rights Reserved
+ *
+ * University Acknowledgment- Portions of this document are derived from
+ * software developed by the University of California, Berkeley, and its
+ * contributors.
+ */
 
-/* Error values */
-#define	SA_OK			0
-#define	SA_NO_MEMORY		2	/* no memory for data structures */
-#define	SA_CONFIG_ERR		6	/* system configuration error */
+#ifndef _SYS_UIO_IMPL_H
+#define	_SYS_UIO_IMPL_H
 
-#endif /* _LIBSPL_LIBSHARE_H */
+#include <sys/uio.h>
+
+extern int uiomove(void *, size_t, enum uio_rw, uio_t *);
+extern void uio_prefaultpages(ssize_t, uio_t *);
+extern int uiocopy(void *, size_t, enum uio_rw, uio_t *, size_t *);
+extern void uioskip(uio_t *, size_t);
+
+#endif	/* _SYS_UIO_IMPL_H */

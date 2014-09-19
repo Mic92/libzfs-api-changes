@@ -20,23 +20,23 @@
  */
 
 /*
- * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
- * Use is subject to license terms.
+ * Copyright (C) 2011 Lawrence Livermore National Security, LLC.
  */
-#ifndef _LIBSPL_LIBSHARE_H
-#define _LIBSPL_LIBSHARE_H
 
-typedef void *sa_handle_t;	/* opaque handle to access core functions */
-typedef void *sa_group_t;
-typedef void *sa_share_t;
+#ifndef _ZFS_VFS_H
+#define _ZFS_VFS_H
 
-/* API Initialization */
-#define	SA_INIT_SHARE_API	0x0001	/* init share specific interface */
-#define	SA_INIT_CONTROL_API	0x0002	/* init control specific interface */
+/*
+ * 2.6.35 API change,
+ * The dentry argument to the .fsync() vfs hook was deemed unused by
+ * all filesystem consumers and dropped.  Add a compatibility prototype
+ * to ensure correct usage when defining this callback.
+ */
+#ifdef HAVE_2ARGS_FSYNC
+#define ZPL_FSYNC_PROTO(fn, x, y, z)	static int fn(struct file *x, int z)
+#else
+#define ZPL_FSYNC_PROTO(fn, x, y, z)	static int fn(struct file *x, \
+						      struct dentry *y, int z)
+#endif
 
-/* Error values */
-#define	SA_OK			0
-#define	SA_NO_MEMORY		2	/* no memory for data structures */
-#define	SA_CONFIG_ERR		6	/* system configuration error */
-
-#endif /* _LIBSPL_LIBSHARE_H */
+#endif /* _ZFS_VFS_H */

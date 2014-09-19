@@ -20,42 +20,15 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2003 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
-#include_next <sys/mount.h>
+#ifndef _LIBSPL_LIBGEN_H
+#define _LIBSPL_LIBGEN_H
 
-#ifndef _LIBSPL_SYS_MOUNT_H
-#define _LIBSPL_SYS_MOUNT_H
+#include <sys/types.h>
 
-#include <sys/mntent.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
+extern int mkdirp(const char *, mode_t);
 
-/*
- * Some old glibc headers don't define BLKGETSIZE64
- * and we don't want to require the kernel headers
- */
-#if !defined(BLKGETSIZE64)
-#define BLKGETSIZE64		_IOR(0x12, 114, size_t)
-#endif
-
-/*
- * Some old glibc headers don't correctly define MS_DIRSYNC and
- * instead use the enum name S_WRITE.  When using these older
- * headers define MS_DIRSYNC to be S_WRITE.
- */
-#if !defined(MS_DIRSYNC)
-#define MS_DIRSYNC		S_WRITE
-#endif
-
-#define	MS_USERS	0x40000000
-#define	MS_OWNER	0x10000000
-#define	MS_GROUP	0x08000000
-#define	MS_COMMENT	0x02000000
-#define	MS_FORCE	MNT_FORCE
-#define	MS_DETACH	MNT_DETACH
-
-#endif /* _LIBSPL_SYS_MOUNT_H */
+#endif /* _LIBSPL_LIBGEN_H */

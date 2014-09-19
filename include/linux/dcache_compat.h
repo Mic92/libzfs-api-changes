@@ -20,23 +20,14 @@
  */
 
 /*
- * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
- * Use is subject to license terms.
+ * Copyright (C) 2011 Lawrence Livermore National Security, LLC.
  */
-#ifndef _LIBSPL_LIBSHARE_H
-#define _LIBSPL_LIBSHARE_H
 
-typedef void *sa_handle_t;	/* opaque handle to access core functions */
-typedef void *sa_group_t;
-typedef void *sa_share_t;
+#ifndef _ZFS_DCACHE_H
+#define _ZFS_DCACHE_H
 
-/* API Initialization */
-#define	SA_INIT_SHARE_API	0x0001	/* init share specific interface */
-#define	SA_INIT_CONTROL_API	0x0002	/* init control specific interface */
+#include <linux/dcache.h>
 
-/* Error values */
-#define	SA_OK			0
-#define	SA_NO_MEMORY		2	/* no memory for data structures */
-#define	SA_CONFIG_ERR		6	/* system configuration error */
+#define dname(dentry)	((char *)((dentry)->d_name.name))
 
-#endif /* _LIBSPL_LIBSHARE_H */
+#endif /* _ZFS_DCACHE_H */
